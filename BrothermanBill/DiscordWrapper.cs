@@ -25,7 +25,7 @@ namespace BrothermanBill
             await SocketClient.LoginAsync(TokenType.Bot, Token);
             await SocketClient.StartAsync();
 
-            await Task.Delay(-1);
+            await Task.Delay(Timeout.Infinite);
         }
 
         private Task Log(LogMessage msg)
@@ -33,5 +33,6 @@ namespace BrothermanBill
             Console.WriteLine(msg.ToString());
             return Task.CompletedTask;
         }
+
     }
 }

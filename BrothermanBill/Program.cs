@@ -10,5 +10,5 @@ var config = new ConfigurationBuilder()
 
 Console.WriteLine("Hello, World!");
 
-var discord = new DiscordWrapper("");
+var discord = new DiscordWrapper(config["DiscordBotToken"]);
 await discord.Run();
