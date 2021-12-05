@@ -1,4 +1,6 @@
 ﻿using Discord;
+using Discord.Audio;
+using Discord.Commands;
 using Discord.WebSocket;
 using System;
 using System.Collections.Generic;
@@ -11,12 +13,14 @@ namespace BrothermanBill
     internal class DiscordWrapper
     {
         private DiscordSocketClient SocketClient;
+        private CommandService CommandService;
         private string Token;
 
         public DiscordWrapper(string token)
         {
             Token = token;
             SocketClient = new DiscordSocketClient();
+            CommandService = new CommandService();
             SocketClient.Log += Log;
         }
 
@@ -33,6 +37,7 @@ namespace BrothermanBill
             Console.WriteLine(msg.ToString());
             return Task.CompletedTask;
         }
+
 
     }
 }
