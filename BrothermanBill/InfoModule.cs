@@ -1,4 +1,5 @@
-﻿using Discord.Commands;
+﻿using Discord;
+using Discord.Commands;
 using Discord.WebSocket;
 using System;
 using System.Collections.Generic;
@@ -16,6 +17,11 @@ namespace BrothermanBill
 		[Summary("Echoes a message.")]
 		public Task SayAsync([Remainder][Summary("The text to echo")] string echo)
 			=> ReplyAsync(echo);
+
+		// ~say hello world -> hello world
+		[Command("kkona")]
+		[Summary("Echoes a message.")]
+		public Task KkonaAsync() => ReplyAsync("KKona brother");
 
 		// ReplyAsync is a method on ModuleBase 
 	}
@@ -51,6 +57,7 @@ namespace BrothermanBill
 		{
 			var userInfo = user ?? Context.Client.CurrentUser;
 			await ReplyAsync($"{userInfo.Username}#{userInfo.Discriminator}");
+			//await userInfo.SendMessageAsync("Here is your DM message! ;)");
 		}
 	}
 }
