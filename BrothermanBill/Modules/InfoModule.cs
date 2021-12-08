@@ -19,9 +19,7 @@ namespace BrothermanBill
 			=> ReplyAsync(echo);
 
 		// ~say hello world -> hello world
-		[Command("kkona")]
-		[Summary("Echoes a message.")]
-		public Task KkonaAsync() => ReplyAsync("KKona brother <:Kkona:917645359633813545>");
+		
 
 		// ReplyAsync is a method on ModuleBase 
 	}
