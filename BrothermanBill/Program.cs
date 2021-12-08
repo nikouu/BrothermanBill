@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Reflection;
+using Victoria;
 
 // run brothermanbill on a rasp pi pogu with a little logo and stuff on it, though no access to windows speech recognition
 // have it check github for new releases? 
@@ -29,26 +30,30 @@ await using var services = new ServiceCollection()
     .AddSingleton<CommandService>()
     .AddSingleton<CommandHandlerService>()
     .AddSingleton<PingService>()
-    .AddSingleton<SimpleAudioService>()
+    .AddSingleton<AudioService>()
     .Configure<InstanceId>(x => x.Id = Guid.NewGuid())
     .Configure<CommandServiceConfig>(x => new CommandServiceConfig
     {
         CaseSensitiveCommands = true,
         LogLevel = LogSeverity.Debug
     })
+    .AddLavaNode(x => x.SelfDeaf = false)
     .BuildServiceProvider();
 
 
 var commands = services.GetRequiredService<CommandService>();
 var socketClient = services.GetRequiredService<DiscordSocketClient>();
 var commandHandler = services.GetRequiredService<CommandHandlerService>();
+var lavaNode = services.GetRequiredService<LavaNode>();
 
 //await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
 
 await commandHandler.InstallCommandsAsync();
 
+Console.WriteLine($"Instance ID: {commandHandler.InstanceId}");
 
-socketClient.Log += (LogMessage msg) => {
+socketClient.Log += (LogMessage msg) =>
+{
     Console.WriteLine(msg.ToString());
     return Task.CompletedTask;
 };
@@ -61,7 +66,7 @@ commands.Log += (LogMessage msg) =>
 //var discord = new DiscordWrapper();
 //await discord.Run();
 
-Console.WriteLine($"Instance ID: {commandHandler.InstanceId}");
+
 await socketClient.LoginAsync(TokenType.Bot, config["DiscordBotToken"]);
 await socketClient.StartAsync();
 
@@ -69,7 +74,7 @@ socketClient.Ready += async () =>
 {
     var guild = socketClient.Guilds.FirstOrDefault();
 
-    var categoryId = guild.Channels.FirstOrDefault(x => x.Name == "Brother Bill's House")?.Id ?? (ulong)0; 
+    var categoryId = guild.Channels.FirstOrDefault(x => x.Name == "Brother Bill's House")?.Id ?? (ulong)0;
 
     if (categoryId == 0)
     {
@@ -81,8 +86,10 @@ socketClient.Ready += async () =>
     var roomId = guild.Channels.FirstOrDefault(x => x.Name == "kkona-truck")?.Id ?? (ulong)0;
 
 
-    if (roomId == 0) {
-        var newRoom = await guild.CreateTextChannelAsync("kkona-truck", channelOptions => { 
+    if (roomId == 0)
+    {
+        var newRoom = await guild.CreateTextChannelAsync("kkona-truck", channelOptions =>
+        {
             channelOptions.CategoryId = categoryId;
             channelOptions.Position = 1;
         });
@@ -91,10 +98,16 @@ socketClient.Ready += async () =>
 
     var channel = socketClient.GetChannel(roomId) as IMessageChannel;
     await channel.SendMessageAsync($"ping {services.GetRequiredService<CommandHandlerService>().InstanceId}");
-    
+
+    if (!lavaNode.IsConnected)
+    {
+        await lavaNode.ConnectAsync();
+    }
+
 
     return;
 };
+
 
 
 
