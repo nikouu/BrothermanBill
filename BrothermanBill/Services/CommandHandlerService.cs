@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using BrothermanBill.Services;
+using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.Options;
@@ -11,19 +12,21 @@ using System.Threading.Tasks;
 
 namespace BrothermanBill
 {
-    public class CommandHandler
+    public class CommandHandlerService
     {
         private readonly DiscordSocketClient _client;
         private readonly CommandService _commands;
         private readonly IServiceProvider _services;
+        private readonly PingService _pingService;
         public readonly Guid InstanceId;
 
         // Retrieve client and CommandService instance via ctor
-        public CommandHandler(DiscordSocketClient client, CommandService commands, IServiceProvider services, IOptions<InstanceId> options)
+        public CommandHandlerService(DiscordSocketClient client, CommandService commands, IServiceProvider services, IOptions<InstanceId> options, PingService pingService)
         {
             _commands = commands;
             _client = client;
             _services = services;
+            _pingService = pingService;
             InstanceId = options.Value.Id; 
         }
 
@@ -31,6 +34,7 @@ namespace BrothermanBill
         {
             // Hook the MessageReceived event into our command handler
             _client.MessageReceived += HandleCommandAsync;
+
 
             // Here we discover all of the command modules in the entry 
             // assembly and load them. Starting from Discord.NET 2.0, a
@@ -48,52 +52,15 @@ namespace BrothermanBill
         {
             // Don't process the command if it was a system message
             var message = messageParam as SocketUserMessage;
-            if (message == null) return;
-
-            var isSelf = message.Author.Id == _client.CurrentUser.Id;
+            if (message == null) return;         
 
             Console.WriteLine($"Recieved Message: {message}");
             // Create a number to track where the prefix ends and the command begins
             int argPos = 0;
 
-            // if the ping message was sent by this bot message was sent by this bot
-            if (isSelf && message.ToString() == $"ping {InstanceId}")
-            {
-                return;
-            }
-
-            // was own message
-            if (isSelf && message.ToString() == $"pong {InstanceId}")
-            {
-                return;
-            }
-
-            // show that this bot is active
-            if (isSelf && message.ToString().Contains("ping")) {
-                var channel = _client.GetChannel(message.Channel.Id) as IMessageChannel;
-                channel.SendMessageAsync($"pong {InstanceId}");
-                return;
-            }
-
-            // if there is another bot active already
-            if (isSelf && message.ToString().Contains("pong"))
-            {
-                var messageArray = message.ToString().Split(" ");
-
-                if (Guid.TryParse(messageArray[1], out var newGuid))
-                {
-                    Console.WriteLine($"Brotherman Bill instance {newGuid} already running. Shutting down.");
-                    await _client.StopAsync();
-                    Console.WriteLine("Press any key to close...");
-                    Console.ReadKey();
-                    Environment.Exit(0);
-
-                }
-                else
-                {
-                    Console.WriteLine("Unknown message.");
-                }
-            }
+            var shouldReturn = await _pingService.HandlePingAsync(messageParam, InstanceId);
+            
+            if (shouldReturn) return;
 
             // Determine if the message is a command based on the prefix and make sure no bots trigger commands
             if (!(message.HasCharPrefix('!', ref argPos) ||

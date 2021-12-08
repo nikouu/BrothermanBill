@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using BrothermanBill;
+using BrothermanBill.Services;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -18,21 +19,29 @@ var config = new ConfigurationBuilder()
                  .AddJsonFile("appsettings.json")
                  .AddUserSecrets<Program>()
                  .Build();
+
+// https://dsharpplus.github.io/natives/index.html
 // https://docs.microsoft.com/en-us/dotnet/core/deploying/single-file
 // https://andrewlock.net/exploring-dotnet-6-part-10-new-dependency-injection-features-in-dotnet-6/
 // https://stackoverflow.com/questions/63585782/inject-a-service-with-parameters-in-asp-net-core-where-one-parameter-is-a-neste
 await using var services = new ServiceCollection()
     .AddSingleton<DiscordSocketClient>()
     .AddSingleton<CommandService>()
-    .AddSingleton<CommandHandler>()
-    .AddSingleton<InfoModule>()
+    .AddSingleton<CommandHandlerService>()
+    .AddSingleton<PingService>()
+    .AddSingleton<SimpleAudioService>()
     .Configure<InstanceId>(x => x.Id = Guid.NewGuid())
+    .Configure<CommandServiceConfig>(x => new CommandServiceConfig
+    {
+        CaseSensitiveCommands = true,
+        LogLevel = LogSeverity.Debug
+    })
     .BuildServiceProvider();
 
 
 var commands = services.GetRequiredService<CommandService>();
 var socketClient = services.GetRequiredService<DiscordSocketClient>();
-var commandHandler = services.GetRequiredService<CommandHandler>();
+var commandHandler = services.GetRequiredService<CommandHandlerService>();
 
 //await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
 
@@ -40,6 +49,12 @@ await commandHandler.InstallCommandsAsync();
 
 
 socketClient.Log += (LogMessage msg) => {
+    Console.WriteLine(msg.ToString());
+    return Task.CompletedTask;
+};
+
+commands.Log += (LogMessage msg) =>
+{
     Console.WriteLine(msg.ToString());
     return Task.CompletedTask;
 };
@@ -75,16 +90,13 @@ socketClient.Ready += async () =>
     }
 
     var channel = socketClient.GetChannel(roomId) as IMessageChannel;
-    await channel.SendMessageAsync($"ping {services.GetRequiredService<CommandHandler>().InstanceId}");
+    await channel.SendMessageAsync($"ping {services.GetRequiredService<CommandHandlerService>().InstanceId}");
     
 
     return;
 };
 
 
-
-
-//Console.WriteLine("Sending ping");
 
 
 await Task.Delay(Timeout.Infinite);
