@@ -16,6 +16,9 @@ namespace BrothermanBill.Services
             _client = client;
         }
 
+        // A cheap way to ensure only one instance is running at a time. 
+        // A if a pong reply to a ping message occurs, another bot is running
+        // and as such, exit this instance. Discord itself is the free "state storage".
         public async Task<bool> HandlePingAsync(SocketMessage messageParam, Guid instanceId)
         {
             var message = messageParam as SocketUserMessage;

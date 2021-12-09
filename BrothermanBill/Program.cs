@@ -25,6 +25,7 @@ var config = new ConfigurationBuilder()
 // https://docs.microsoft.com/en-us/dotnet/core/deploying/single-file
 // https://andrewlock.net/exploring-dotnet-6-part-10-new-dependency-injection-features-in-dotnet-6/
 // https://stackoverflow.com/questions/63585782/inject-a-service-with-parameters-in-asp-net-core-where-one-parameter-is-a-neste
+// perhaps give recognizer hints by getting together all the commands
 await using var services = new ServiceCollection()
     .AddSingleton<DiscordSocketClient>()
     .AddSingleton<CommandService>()
