@@ -85,6 +85,7 @@ namespace BrothermanBill.Modules
         [Command("Play")]
         public async Task PlayAsync([Remainder] string searchQuery)
         {
+
             if (string.IsNullOrWhiteSpace(searchQuery))
             {
                 await ReplyAsync("Please provide search terms.");
@@ -93,8 +94,7 @@ namespace BrothermanBill.Modules
 
             if (!_lavaNode.HasPlayer(Context.Guild))
             {
-                await ReplyAsync("I'm not connected to a voice channel.");
-                return;
+                await JoinAsync();
             }
 
             var searchResponse = await _lavaNode.SearchAsync(SearchType.Direct, searchQuery);
@@ -224,27 +224,6 @@ namespace BrothermanBill.Modules
                 return;
             }
 
-            //var voiceChannelUsers = (player.VoiceChannel as SocketVoiceChannel)?.Users
-            //    .Where(x => !x.IsBot)
-            //    .ToArray();
-
-            //if (_audioService.VoteQueue.Contains(Context.User.Id))
-            //{
-            //    await ReplyAsync("You can't vote again.");
-            //    return;
-            //}
-
-            //_audioService.VoteQueue.Add(Context.User.Id);
-            //if (voiceChannelUsers != null)
-            //{
-            //    var percentage = _audioService.VoteQueue.Count / voiceChannelUsers.Length * 100;
-            //    if (percentage < 85)
-            //    {
-            //        await ReplyAsync("You need more than 85% votes to skip this song.");
-            //        return;
-            //    }
-            //}
-
             try
             {
                 var (oldTrack, currenTrack) = await player.SkipAsync();
@@ -254,8 +233,6 @@ namespace BrothermanBill.Modules
             {
                 await ReplyAsync(exception.Message);
             }
-
-            _audioService.VoteQueue.Clear();
         }
 
         [Command("Seek")]
