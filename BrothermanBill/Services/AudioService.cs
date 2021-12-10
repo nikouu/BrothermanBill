@@ -76,7 +76,7 @@ namespace BrothermanBill.Services
             if (!player.Queue.TryDequeue(out var lavaTrack))
             {
                 await player.TextChannel.SendMessageAsync("Queue completed! Please add more tracks to rock n' roll!");
-                _ = InitiateDisconnectAsync(args.Player, TimeSpan.FromSeconds(10));
+                _ = InitiateDisconnectAsync(args.Player, TimeSpan.FromMinutes(10));
                 return;
             }
 
