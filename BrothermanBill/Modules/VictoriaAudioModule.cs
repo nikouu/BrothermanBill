@@ -16,6 +16,7 @@ namespace BrothermanBill.Modules
     // https://www.oracle.com/java/technologies/downloads/#jdk17-windows
     // https://github.com/Yucked/Victoria/wiki
     // https://raw.githubusercontent.com/freyacodes/Lavalink/master/LavalinkServer/application.yml.example
+    // perhaps have a play now, that just injects a new track immediately, hten goes back to the old one
     public class VictoriaAudioModule : ModuleBase<SocketCommandContext>
     {
         private readonly LavaNode _lavaNode;
@@ -74,7 +75,7 @@ namespace BrothermanBill.Modules
             try
             {
                 await _lavaNode.LeaveAsync(voiceChannel);
-                await ReplyAsync($"I've left {voiceChannel.Name}!");
+                //await ReplyAsync($"I've left {voiceChannel.Name}!");
             }
             catch (Exception exception)
             {
@@ -84,7 +85,8 @@ namespace BrothermanBill.Modules
 
         [Command("Play")]
         public async Task PlayAsync([Remainder] string searchQuery)
-        {
+        {            
+            var fullQuery = searchQuery;
 
             if (string.IsNullOrWhiteSpace(searchQuery))
             {
@@ -97,7 +99,16 @@ namespace BrothermanBill.Modules
                 await JoinAsync();
             }
 
-            var searchResponse = await _lavaNode.SearchAsync(SearchType.Direct, searchQuery);
+            // is there a better way to do this pattern?
+            // do the yt search by default here
+            var isValidUrl = Uri.TryCreate(searchQuery, UriKind.Absolute, out var uri);
+
+            if (!isValidUrl)
+            {
+                fullQuery = "ytsearch: " + searchQuery;
+            }
+
+            var searchResponse = await _lavaNode.SearchAsync(SearchType.Direct, fullQuery);
             if (searchResponse.Status is SearchStatus.LoadFailed or SearchStatus.NoMatches)
             {
                 await ReplyAsync($"I wasn't able to find anything for `{searchQuery}`.");
