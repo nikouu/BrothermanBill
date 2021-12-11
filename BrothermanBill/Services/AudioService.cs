@@ -104,7 +104,7 @@ namespace BrothermanBill.Services
                 value = _disconnectTokens[player.VoiceChannel.Id];
             }
 
-            await player.TextChannel.SendMessageAsync($"Auto disconnect initiated! Disconnecting in {timeSpan}...");
+           // await player.TextChannel.SendMessageAsync($"Auto disconnect initiated! Disconnecting in {timeSpan}...");
             var isCancelled = SpinWait.SpinUntil(() => value.IsCancellationRequested, timeSpan);
             if (isCancelled)
             {
