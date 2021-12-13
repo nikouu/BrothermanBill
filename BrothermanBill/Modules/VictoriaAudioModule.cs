@@ -17,6 +17,7 @@ namespace BrothermanBill.Modules
     // https://github.com/Yucked/Victoria/wiki
     // https://raw.githubusercontent.com/freyacodes/Lavalink/master/LavalinkServer/application.yml.example
     // perhaps have a play now, that just injects a new track immediately, hten goes back to the old one
+    /*
     public class VictoriaAudioModule : ModuleBase<SocketCommandContext>
     {
         private readonly LavaNode _lavaNode;
@@ -47,8 +48,9 @@ namespace BrothermanBill.Modules
 
             try
             {
-                await _lavaNode.JoinAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
+                var f = await _lavaNode.JoinAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
                 await ReplyAsync($"Joined {voiceState.VoiceChannel.Name}!");
+
             }
             catch (Exception exception)
             {
@@ -408,4 +410,6 @@ namespace BrothermanBill.Modules
         }
 
     }
+
+    */
 }
