@@ -83,7 +83,7 @@ namespace BrothermanBill.Modules
             var userAduioStream = (InputStream)socketUser.AudioStream;
             var currentTicks = DateTime.Now;
 
-            var memoryStream = new MemoryStream(await BufferIncomingStream(userAduioStream, 3));
+            var memoryStream = new MemoryStream(await BufferIncomingStream(userAduioStream, 5));
 
             using (var fileStream = new FileStream(@$"C:\lmao2\{currentTicks.Ticks}.bin", FileMode.Create))
             {
@@ -99,7 +99,14 @@ namespace BrothermanBill.Modules
                 //outputMemoryStream.CopyTo(fileStream);
             }
 
-            _speechService.ParseStream(memoryStream);
+            using (var fileStream = new FileStream(@$"C:\lmao2\{currentTicks.Ticks}.wav", FileMode.Open))
+            {
+                var tempMemoryStream = new MemoryStream();
+                fileStream.CopyTo(tempMemoryStream);
+                tempMemoryStream.Position = 0;
+                _speechService.ParseStream(tempMemoryStream);
+            }
+                
         }
 
 
@@ -189,7 +196,7 @@ namespace BrothermanBill.Modules
             return Process.Start(new ProcessStartInfo
             {
                 FileName = "ffmpeg",
-                Arguments = $"-hide_banner -loglevel panic -ac 2 -f s16le -ar 48000 -i {filePath} -ac 2 -ar 44100 -f wav -",
+                Arguments = $"-hide_banner -loglevel panic -ac 2 -f s16le -ar 48000 -i {filePath} -acodec pcm_u8 -ac 2 -ar 44100 -f wav -",
                 RedirectStandardOutput = true,
                 RedirectStandardInput = true,
                 RedirectStandardError = true
