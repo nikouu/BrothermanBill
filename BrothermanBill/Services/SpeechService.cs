@@ -21,12 +21,12 @@ namespace BrothermanBill.Services
         public void ParseStream(MemoryStream audioStream)
         {
             using (var recognizer = new SpeechRecognitionEngine(new System.Globalization.CultureInfo("en-NZ")))
-            {
-                var grammarBuilder = new GrammarBuilder("brother man bill");
-                grammarBuilder.Append("apple");
+            {       
 
-                var grammar = new Grammar(grammarBuilder);
-                recognizer.LoadGrammar(grammar);
+  
+                recognizer.LoadGrammar(new Grammar(new GrammarBuilder("brother man bill")));
+                recognizer.LoadGrammar(new Grammar(new GrammarBuilder("apple")));
+                recognizer.LoadGrammar(new Grammar(new GrammarBuilder("play")));
 
                 // Create and load a dictation grammar.  this seems to be all the normal words
                 recognizer.LoadGrammar(new DictationGrammar());
@@ -35,15 +35,17 @@ namespace BrothermanBill.Services
                 recognizer.SpeechRecognized += recognizer_SpeechRecognized;
                 recognizer.SpeechRecognitionRejected += recognizer_SpeechRecognitionRejected;
                 recognizer.SpeechHypothesized += recognizer_SpeechHypothesized;
-                recognizer.SpeechDetected += recognizer_SpeechRecognized;
+                recognizer.SpeechDetected += recognizer_SpeechDetected;
 
                 // Configure input to the speech recognizer.  
                 // found this out by opening the dumped file and opening VLC to see codec information for the file when playing
-                recognizer.SetInputToAudioStream(audioStream, new SpeechAudioFormatInfo(48000, AudioBitsPerSample.Eight, AudioChannel.Stereo));
+                recognizer.SetInputToAudioStream(audioStream, new SpeechAudioFormatInfo(44100, AudioBitsPerSample.Eight, AudioChannel.Stereo));        
 
                 Console.WriteLine("detecting text in stream");
-                // Start asynchronous, continuous speech recognition.  
-                recognizer.RecognizeAsync(RecognizeMode.Single);
+         
+                var result = recognizer.Recognize();
+
+                Console.WriteLine($"Recognize result:{result?.Text}");
 
                 // Keep the console window open.  
                 //while (true)
@@ -52,7 +54,7 @@ namespace BrothermanBill.Services
                 //}
             }
         }
-        static void recognizer_SpeechRecognized(object sender, SpeechDetectedEventArgs e)
+        static void recognizer_SpeechDetected(object sender, SpeechDetectedEventArgs e)
         {
             Console.WriteLine("Detected speech: ");
         }
