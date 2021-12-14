@@ -29,6 +29,11 @@ namespace BrothermanBill.Services
         [Command("joinSimple", RunMode = RunMode.Async)]
         public async Task JoinCmd()
         {
+            if ((Context.User as IVoiceState).VoiceChannel == null)
+            {
+                await ReplyAsync("Calling user isn't in a voice channel");
+                return;
+            }
             await _service.JoinAudio(Context.Guild, (Context.User as IVoiceState).VoiceChannel);
         }
 

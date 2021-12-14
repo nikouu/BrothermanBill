@@ -1,14 +1,25 @@
-﻿using Discord;
+﻿using BrothermanBill.Services;
+using Discord;
 using Discord.Audio;
 using Discord.Audio.Streams;
 using Discord.Commands;
 using Discord.WebSocket;
+using FFMpegCore;
+using FFMpegCore.Enums;
+using FFMpegCore.Pipes;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 
 namespace BrothermanBill.Modules
 {
     public class GeneralModule : ModuleBase<SocketCommandContext>
     {
+        private SpeechService _speechService;
+        public GeneralModule(SpeechService speechService)
+        {
+            _speechService = speechService;
+        }
+
         [Command("ping")]
         public Task PingAsync()
             => ReplyAsync($"Current Ping {Context.Client.Latency}ms");
@@ -37,55 +48,134 @@ namespace BrothermanBill.Modules
                 if (user.IsBot)
                     continue;
 
-                await ListenUserAsync(user);
+                await ListenUserAsync2(user);
             }
         }
 
+        public async Task<byte[]> BufferIncomingStream(AudioInStream e, int time = 3)
+        {
+            ConcurrentQueue<byte> voiceInQueue = new ConcurrentQueue<byte>();
+            SemaphoreSlim queueLock = new SemaphoreSlim(1, 1);
+            return await Task.Run(async () =>
+            {
+                DateTime nowTime = DateTime.Now;
+                while (DateTime.Now.Subtract(nowTime).TotalSeconds <= time)
+                {
+                    if (e.AvailableFrames > 0)
+                    {
+                        queueLock.Wait();
+                        RTPFrame frame = await e.ReadFrameAsync(CancellationToken.None);
+                        for (int i = 0; i < frame.Payload.Length; i++)
+                        {
+                            voiceInQueue.Enqueue(frame.Payload[i]);
+                        }
+                        queueLock.Release();
+                    }
+                }
+                return voiceInQueue.ToArray();
+            });
+        }
+
+        // https://github.com/jfantonopoulos/Misaka/blob/002975680ce75500c1b72ddaf2289674c9e17e55/Misaka/Services/AudioService.cs
+        public async Task ListenUserAsync2(IGuildUser user)
+        {
+            var socketUser = (user as SocketGuildUser);
+            var userAduioStream = (InputStream)socketUser.AudioStream;
+            var currentTicks = DateTime.Now;
+
+            var memoryStream = new MemoryStream(await BufferIncomingStream(userAduioStream, 3));
+
+            using (var fileStream = new FileStream(@$"C:\lmao2\{currentTicks.Ticks}.bin", FileMode.Create))
+            {
+
+                memoryStream.CopyTo(fileStream);
+            }
+
+            memoryStream.Position = 0;
+            using (var process = CreateFfmpegOut(@$"C:\lmao2\{currentTicks.Ticks}.bin"))
+            using (var fileStream = new FileStream(@$"C:\lmao2\{currentTicks.Ticks}.wav", FileMode.Create))
+            {
+                process.StandardOutput.BaseStream.CopyTo(fileStream);
+                //outputMemoryStream.CopyTo(fileStream);
+            }
+
+            _speechService.ParseStream(memoryStream);
+        }
+
+
         public async Task ListenUserAsync(IGuildUser user)
+
         {
             var socketUser = (user as SocketGuildUser);
             var userAduioStream = (InputStream)socketUser.AudioStream;
 
-            var recordingTimeInSeconds = 3;
+            var recordingTimeInSeconds = 4;
             var startListeningTime = DateTime.Now;
 
             //using (var ffmpeg = CreateFfmpegOut())
             //using (var ffmpegOutStdinStream = ffmpeg.StandardInput.BaseStream)
-            using (var memoryStream = new MemoryStream())
+            //using (var ffmpegStdinStream = ffmpeg.StandardOutput.BaseStream)
+            using (var inputMemoryStream = new MemoryStream())
+            using (var outputMemoryStream = new MemoryStream())
             {
                 try
                 {
                     var buffer = new byte[4096];
                     // this will wait until there is audio in order to pop the recording time limit. i.e. if its silent before the recording time in seconds pops, it will wait until the next sound to break from the while
-                    while (await userAduioStream.ReadAsync(buffer, 0, buffer.Length) > 0 && (DateTime.Now - startListeningTime).TotalSeconds < recordingTimeInSeconds)
+                    while (await userAduioStream.ReadAsync(buffer, 0, buffer.Length) > 0)
                     {
-                        await memoryStream.WriteAsync(buffer, 0, buffer.Length);
-                        //Console.WriteLine(ffmpegOutStdinStream.Position);
-                       // await ffmpegOutStdinStream.FlushAsync();
+                        await inputMemoryStream.WriteAsync(buffer, 0, buffer.Length);
+                        await inputMemoryStream.FlushAsync();
                     }
                 }
                 finally
                 {
-                    await memoryStream.FlushAsync();                    
-                    //ffmpegOutStdinStream.Close();
+                    await inputMemoryStream.FlushAsync();
+                    //await ffmpegStdinStream.FlushAsync();
+                    //ffmpegStdinStream.Close();
                     //ffmpeg.Close();
                 }
 
-                Console.WriteLine(memoryStream.Length);
-                memoryStream.Position = 0; //THIS WAS IT
+                Console.WriteLine(inputMemoryStream.Length);
+                inputMemoryStream.Position = 0; //THIS WAS IT
 
-                var currentTicks = DateTime.Now.Ticks;
+                var currentTicks = DateTime.Now;
 
-                using (var fileStream = new FileStream(@$"C:\lmao2\{currentTicks}.bin", FileMode.Create))
+
+
+                //await FFMpegArguments.FromPipeInput(new StreamPipeSource(inputMemoryStream), options => options
+                //    .WithCustomArgument("-ac 2")
+                //    .WithCustomArgument("-f s16le")
+                //    //.WithCustomArgument("-ar 48000")
+                //    )
+                //    .OutputToPipe(new StreamPipeSink(outputMemoryStream), options => options
+                //    .WithCustomArgument("-acodec pcm_u8")
+                //    .WithCustomArgument("-ar 48000")
+                //    .WithCustomArgument("-f wav")
+                //    ).ProcessAsynchronously();
+
+
+                outputMemoryStream.Position = 0;
+
+
+                using (var fileStream = new FileStream(@$"C:\lmao2\{currentTicks.Ticks}.bin", FileMode.Create))
                 {
-                    memoryStream.CopyTo(fileStream);
+
+                    inputMemoryStream.CopyTo(fileStream);
                 }
 
-                using (var process = CreateFfmpegOut(@$"C:\lmao2\{currentTicks}.bin"))
-                using (var fileStream = new FileStream(@$"C:\lmao2\{currentTicks}.wav", FileMode.Create))
+                outputMemoryStream.Position = 0;
+                using (var process = CreateFfmpegOut(@$"C:\lmao2\{currentTicks.Ticks}.bin"))
+                using (var fileStream = new FileStream(@$"C:\lmao2\{currentTicks.Ticks}.wav", FileMode.Create))
                 {
                     process.StandardOutput.BaseStream.CopyTo(fileStream);
+                    //outputMemoryStream.CopyTo(fileStream);
                 }
+
+                var differenceInMs = (DateTime.Now - currentTicks).TotalMilliseconds;
+                Console.WriteLine(differenceInMs);
+
+                _speechService.ParseStream(inputMemoryStream);
 
                 //var analysis = FFProbe.Analyse(memoryStream);
 
@@ -94,13 +184,24 @@ namespace BrothermanBill.Modules
                 //    .ProcessSynchronously();
             }
         }
-
         public static Process CreateFfmpegOut(string filePath)
+        {
+            return Process.Start(new ProcessStartInfo
+            {
+                FileName = "ffmpeg",
+                Arguments = $"-hide_banner -loglevel panic -ac 2 -f s16le -ar 48000 -i {filePath} -ac 2 -ar 44100 -f wav -",
+                RedirectStandardOutput = true,
+                RedirectStandardInput = true,
+                RedirectStandardError = true
+            });
+        }
+
+        public static Process CreateFfmpegOut()
         {        
             return Process.Start(new ProcessStartInfo
             {
                 FileName = "ffmpeg",
-                Arguments = $"-hide_banner -loglevel panic -ac 2 -f s16le -ar 48000 -i {filePath} -acodec pcm_u8 -ar 22050 -f wav -",
+                Arguments = $"-hide_banner -loglevel panic -ac 2 -f s16le -ar 48000 -i pipe:0 -acodec pcm_u8 -ar 22050 -f wav -",
                 RedirectStandardOutput = true,
                 RedirectStandardInput = true,
                 RedirectStandardError = true
