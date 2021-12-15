@@ -63,8 +63,10 @@ namespace BrothermanBill
             if (shouldReturn) return;
 
             // Determine if the message is a command based on the prefix and make sure no bots trigger commands
+            // making sure the bot can call its own commands might be a mistake
             if (!(message.HasCharPrefix('!', ref argPos) ||
                 message.HasMentionPrefix(_client.CurrentUser, ref argPos)) ||
+                message.Author != _client.CurrentUser ||
                 message.Author.IsBot)
                 return;
 
