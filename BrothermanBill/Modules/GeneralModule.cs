@@ -1,4 +1,5 @@
 ﻿using BrothermanBill.Services;
+using CliWrap;
 using Discord;
 using Discord.Audio;
 using Discord.Audio.Streams;
@@ -105,48 +106,66 @@ namespace BrothermanBill.Modules
                     frameQueue.Add(frameData.Buffer.ToArray());
 
                     
-                    if (frameQueue.Count > 20)
+                    if (frameQueue.Count > 300)
                     {
-                        using (var ffmpeg = CreateFfmpegOut())
-                        using (var ffmpegOutStdinStream = ffmpeg.StandardInput.BaseStream)
-                        using (var ffmpegOutStdinStreamOut = ffmpeg.StandardOutput.BaseStream)
-                        using (var inputStream = new MemoryStream())
-                        using (var outputStream = new MemoryStream())
-                        {
-                            ffmpeg.OutputDataReceived += (sender, args) => Console.WriteLine(args.Data);
-                            ffmpeg.ErrorDataReceived += (sender, args) => Console.WriteLine(args.Data);
+                        //using (var ffmpeg = CreateFfmpegOut())
+                        //using (var ffmpegOutStdinStream = ffmpeg.StandardInput.BaseStream)
+                        //using (var ffmpegOutStdinStreamOut = ffmpeg.StandardOutput.BaseStream)
+                        //using (var inputStream = new MemoryStream())
+                        //using (var outputStream = new MemoryStream())
+                        //{
+                        //    ffmpeg.OutputDataReceived += (sender, args) => Console.WriteLine(args.Data);
+                        //    ffmpeg.ErrorDataReceived += (sender, args) => Console.WriteLine(args.Data);
 
                             var buffer = frameQueue.SelectMany(byteArr => byteArr).ToArray();
 
-                            await inputStream.WriteAsync(buffer, 0, buffer.Length);
-                            inputStream.Position = 0;
+                        //    inputStream.Write(buffer, 0, buffer.Length);
+                        //    inputStream.Position = 0;
 
-                            //inputStream.CopyTo(ffmpegOutStdinStream);
+                        //    //inputStream.CopyTo(ffmpegOutStdinStream);
 
-                            await ffmpegOutStdinStream.WriteAsync(buffer, 0, buffer.Length);
+                        //    ffmpegOutStdinStream.Write(buffer, 0, buffer.Length);
 
-                            ffmpegOutStdinStream.Close();
+                        //    ffmpegOutStdinStream.Close();
 
-                            ffmpegOutStdinStreamOut.CopyTo(outputStream);
+                        //    ffmpegOutStdinStreamOut.CopyTo(outputStream);
 
-                            //ffmpeg.StandardOutput.BaseStream.CopyTo(outputStream);
+                        //    //ffmpeg.StandardOutput.BaseStream.CopyTo(outputStream);
 
-                            //Console.WriteLine($"{DateTime.Now.ToString("HHmmssFFF")} Length: {frameData.Buffer.Length} All Zeroes: {!hasOnes} Same buffer: {Enumerable.SequenceEqual(inputStream.ToArray(), outputStream.ToArray())}");
+                        //    //Console.WriteLine($"{DateTime.Now.ToString("HHmmssFFF")} Length: {frameData.Buffer.Length} All Zeroes: {!hasOnes} Same buffer: {Enumerable.SequenceEqual(inputStream.ToArray(), outputStream.ToArray())}");
 
-                            fullBuffer.Write(outputStream.ToArray(), 0, outputStream.ToArray().Length);
+                        //    fullBuffer.Write(outputStream.ToArray(), 0, outputStream.ToArray().Length);
 
-                            fullBuffer.Position = 0;
-                            speech.ParseStream(fullBuffer);
+                        //    fullBuffer.Position = 0;
+                        //    speech.ParseStream(fullBuffer);
 
-                            using (var fileStream = new FileStream(@$"C:\lmao2\{DateTime.Now.Ticks}.wav", FileMode.Create))
-                            {
-                                fullBuffer.Position = 0;
-                                fullBuffer.CopyTo(fileStream);
-                            }
+                        //    using (var fileStream = new FileStream(@$"C:\lmao2\{DateTime.Now.Ticks}.wav", FileMode.Create))
+                        //    {
+                        //        fullBuffer.Position = 0;
+                        //        fullBuffer.CopyTo(fileStream);
+                        //    }
 
-                            fullBuffer.SetLength(0);
-                            frameQueue.Clear();
-                        }                       
+                        //    fullBuffer.SetLength(0);
+                        //    frameQueue.Clear();
+                        //}
+                        //
+
+                        using var output = new MemoryStream();
+
+                        var convert = await Cli.Wrap("ffmpeg")
+                        .WithArguments("-ac 2 -f s16le -ar 48000 -i pipe:0 -acodec pcm_u8 -ar 44100 -f wav -")
+                        .WithStandardInputPipe(PipeSource.FromBytes(buffer))
+                        .WithStandardOutputPipe(PipeTarget.ToStream(output))                        
+                        .ExecuteAsync();
+
+                        using (var fileStream = new FileStream(@$"C:\lmao2\{DateTime.Now.Ticks}.wav", FileMode.Create))
+                        {
+                            output.Position = 0;
+                            output.CopyTo(fileStream);
+                        }
+
+                        fullBuffer.SetLength(0);
+                        frameQueue.Clear();
                     }
 
                     pipeReader.AdvanceTo(frameData.Buffer.End);
