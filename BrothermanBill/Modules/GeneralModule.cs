@@ -7,6 +7,7 @@ using Discord.WebSocket;
 using FFMpegCore;
 using FFMpegCore.Enums;
 using FFMpegCore.Pipes;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Pipelines;
@@ -68,6 +69,7 @@ namespace BrothermanBill.Modules
         {
             _ = Task.Run(async () =>
               {
+                  ConcurrentQueue<byte> voiceInQueue = new ConcurrentQueue<byte>();
                   SemaphoreSlim queueLock = new SemaphoreSlim(1, 1);
 
                   while (true)
@@ -77,12 +79,20 @@ namespace BrothermanBill.Modules
                           queueLock.Wait();
                           RTPFrame frame = await audioInStream.ReadFrameAsync(CancellationToken.None);
 
-                          await pipeWriter.WriteAsync(frame.Payload);
 
-                          //pipeWriter.Advance(frame.Payload.Length);
+
+                          for (int i = 0; i < frame.Payload.Length; i++)
+                          {
+                              voiceInQueue.Enqueue(frame.Payload[i]);
+                          }
+
+
 
                           queueLock.Release();
                       }
+
+                      await pipeWriter.WriteAsync(voiceInQueue.ToArray());
+                      voiceInQueue.Clear();
                   }
               });
         }
@@ -91,11 +101,73 @@ namespace BrothermanBill.Modules
         {
             _ = Task.Run(async () =>
             {
+                var processedFrames = 0;
+                var speech = new SpeechService();
+                //using var circularBuffer = new SpeechStreamer(61440);
+
+                using var fullBuffer = new MemoryStream();
+
                 while (true)
                 {
                     var frameData = await pipeReader.ReadAsync();
-                    Console.WriteLine($"{DateTime.Now.ToString("HHmmssFFF")} Length: {frameData.Buffer.Length}");
-                    pipeReader.AdvanceTo(frameData.Buffer.End);
+                    processedFrames++;
+
+                    if (processedFrames > 20)
+                    {
+                        using (var ffmpeg = CreateFfmpegOut())
+                        using (var ffmpegOutStdinStream = ffmpeg.StandardInput.BaseStream)
+                        using (var ffmpegOutStdinStreamOut = ffmpeg.StandardOutput.BaseStream)
+                        using (var inputStream = new MemoryStream())
+                        using (var outputStream = new MemoryStream())
+                        {
+                            ffmpeg.OutputDataReceived += (sender, args) => Console.WriteLine(args.Data);
+                            ffmpeg.ErrorDataReceived += (sender, args) => Console.WriteLine(args.Data);
+
+                            var buffer = new byte[frameData.Buffer.Length];
+                            //var buffer2 = new byte[4096];
+                            var hasOnes = frameData.Buffer.ToArray().Contains((byte)1);
+
+
+                            // writes the value of "buffer" to the stream
+                            //await ffmpegOutStdinStream.WriteAsync(frameData.Buffer.ToArray(), 0, buffer.Length);
+
+                            await inputStream.WriteAsync(frameData.Buffer.ToArray(), 0, frameData.Buffer.ToArray().Length);
+                            inputStream.Position = 0;
+
+                            inputStream.CopyTo(ffmpegOutStdinStream);
+
+                            ffmpegOutStdinStream.Close();
+
+                            ffmpegOutStdinStreamOut.CopyTo(outputStream);
+
+                            //ffmpeg.StandardOutput.BaseStream.CopyTo(outputStream);
+
+                            //Console.WriteLine($"{DateTime.Now.ToString("HHmmssFFF")} Length: {frameData.Buffer.Length} All Zeroes: {!hasOnes} Same buffer: {Enumerable.SequenceEqual(inputStream.ToArray(), outputStream.ToArray())}");
+
+                            fullBuffer.Write(outputStream.ToArray(), 0, outputStream.ToArray().Length);
+
+
+                            fullBuffer.Position = 0;
+                            speech.ParseStream(fullBuffer);
+
+                            using (var fileStream = new FileStream(@$"C:\lmao2\{DateTime.Now.Ticks}.wav", FileMode.Create))
+                            {
+                                fullBuffer.Position = 0;
+                                fullBuffer.CopyTo(fileStream);
+                            }
+
+                            fullBuffer.SetLength(0);
+                        }
+
+                        processedFrames = 0;
+                    }
+                    else
+                    {
+                        var byteArray = frameData.Buffer.ToArray();
+                        await fullBuffer.WriteAsync(byteArray, 0, byteArray.Length);
+                    }
+
+                    pipeReader.AdvanceTo(frameData.Buffer.End);  
                 }
             });
         }
@@ -259,7 +331,7 @@ namespace BrothermanBill.Modules
             return Process.Start(new ProcessStartInfo
             {
                 FileName = "ffmpeg",
-                Arguments = $"-hide_banner -loglevel panic -ac 2 -f s16le -ar 48000 -i pipe:0 -acodec pcm_u8 -ar 22050 -f wav -",
+                Arguments = $"-hide_banner -loglevel panic -ac 2 -f s16le -ar 48000 -i pipe:0 -acodec pcm_u8 -ar 44100 -f wav -",
                 RedirectStandardOutput = true,
                 RedirectStandardInput = true,
                 RedirectStandardError = true
