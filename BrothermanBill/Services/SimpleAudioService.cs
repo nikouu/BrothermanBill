@@ -93,7 +93,7 @@ namespace BrothermanBill.Services
         public async Task SendAudioAsync(IGuild guild, IMessageChannel channel, string path)
         {
             // Your task: Get a full path to the file if the value of 'path' is only a filename.
-            var fullFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "we-got-him.mp3");
+            var fullFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "joinSound.mp3");
 
             if (!File.Exists(fullFilePath))
             {

@@ -64,11 +64,23 @@ namespace BrothermanBill
 
             // Determine if the message is a command based on the prefix and make sure no bots trigger commands
             // making sure the bot can call its own commands might be a mistake
-            if (!(message.HasCharPrefix('!', ref argPos) ||
-                message.HasMentionPrefix(_client.CurrentUser, ref argPos)) ||
-                message.Author != _client.CurrentUser ||
-                message.Author.IsBot)
+
+            // if the message does not start with a command prefix
+            if(!message.HasCharPrefix('!', ref argPos)) {
                 return;
+            }
+
+            //// if the message does not mention the bot
+            //if (!message.HasMentionPrefix(_client.CurrentUser, ref argPos))
+            //{
+            //    return;
+            //}
+
+            // if the message is a bot that isnt itself
+            if (message.Author.IsBot && message.Author != _client.CurrentUser)
+            {
+                return;
+            }
 
             // Create a WebSocket-based command context based on the message
             var context = new SocketCommandContext(_client, message);

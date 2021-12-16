@@ -15,6 +15,7 @@
     <PackageReference Include="FFMpegCore" Version="4.6.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="6.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.0" />
+    <PackageReference Include="System.IO.Pipelines" Version="6.0.1" />
     <PackageReference Include="System.Speech" Version="6.0.0" />
     <PackageReference Include="Victoria" Version="5.2.4" />
   </ItemGroup>
@@ -24,6 +25,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Brothermanbill.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="joinSound.mp3">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="Lavalink\application.yml">
