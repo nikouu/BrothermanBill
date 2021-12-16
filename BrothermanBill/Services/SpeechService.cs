@@ -18,7 +18,7 @@ namespace BrothermanBill.Services
             _synth = new SpeechSynthesizer();
         }
 
-        public void ParseStream(MemoryStream audioStream)
+        public string ParseStream(MemoryStream audioStream)
         {
             using (var recognizer = new SpeechRecognitionEngine(new System.Globalization.CultureInfo("en-NZ")))
             {       
@@ -43,9 +43,12 @@ namespace BrothermanBill.Services
 
                 Console.WriteLine("detecting text in stream");
          
+                // perhaps have a stop phrase so it caps everything after?
                 var result = recognizer.Recognize();
 
                 Console.WriteLine($"Recognize result:{result?.Text}");
+
+                return result.Text;
 
                 // Keep the console window open.  
                 //while (true)

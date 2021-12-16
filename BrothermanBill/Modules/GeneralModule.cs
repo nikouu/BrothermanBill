@@ -9,6 +9,7 @@ using FFMpegCore.Enums;
 using FFMpegCore.Pipes;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.IO.Pipelines;
 
 namespace BrothermanBill.Modules
 {
@@ -18,6 +19,7 @@ namespace BrothermanBill.Modules
         public GeneralModule(SpeechService speechService)
         {
             _speechService = speechService;
+            Console.WriteLine(System.Reflection.MethodBase.GetCurrentMethod().Name);
         }
 
         [Command("ping")]
@@ -48,10 +50,58 @@ namespace BrothermanBill.Modules
                 if (user.IsBot)
                     continue;
 
-                await ListenUserAsync2(user);
+                await ListenUserAsync3(user);
             }
         }
 
+        public async Task ListenUserAsync3(IGuildUser user)
+        {
+            var socketUser = (user as SocketGuildUser);
+            var userAduioStream = (InputStream)socketUser.AudioStream;
+
+            var pipe = new Pipe();
+            await BufferIncomingStream(userAduioStream, pipe.Writer);
+            await ReadPipe(pipe.Reader);
+        }
+
+        public async Task BufferIncomingStream(AudioInStream audioInStream, PipeWriter pipeWriter)
+        {
+            _ = Task.Run(async () =>
+              {
+                  SemaphoreSlim queueLock = new SemaphoreSlim(1, 1);
+
+                  while (true)
+                  {
+                      if (audioInStream.AvailableFrames > 0)
+                      {
+                          queueLock.Wait();
+                          RTPFrame frame = await audioInStream.ReadFrameAsync(CancellationToken.None);
+
+                          await pipeWriter.WriteAsync(frame.Payload);
+
+                          //pipeWriter.Advance(frame.Payload.Length);
+
+                          queueLock.Release();
+                      }
+                  }
+              });
+        }
+
+        public async Task ReadPipe(PipeReader pipeReader)
+        {
+            _ = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    var frameData = await pipeReader.ReadAsync();
+                    Console.WriteLine($"{DateTime.Now.ToString("HHmmssFFF")} Length: {frameData.Buffer.Length}");
+                    pipeReader.AdvanceTo(frameData.Buffer.End);
+                }
+            });
+        }
+
+        // consider https://stackoverflow.com/questions/1682902/streaming-input-to-system-speech-recognition-speechrecognitionengine
+        // for unlimited stream for parse over voice stuff
         public async Task<byte[]> BufferIncomingStream(AudioInStream e, int time = 3)
         {
             ConcurrentQueue<byte> voiceInQueue = new ConcurrentQueue<byte>();
@@ -104,9 +154,10 @@ namespace BrothermanBill.Modules
                 var tempMemoryStream = new MemoryStream();
                 fileStream.CopyTo(tempMemoryStream);
                 tempMemoryStream.Position = 0;
-                _speechService.ParseStream(tempMemoryStream);
+                var text = _speechService.ParseStream(tempMemoryStream);
+                ReplyAsync($"{user.Nickname} {text}");
             }
-                
+
         }
 
 
@@ -204,7 +255,7 @@ namespace BrothermanBill.Modules
         }
 
         public static Process CreateFfmpegOut()
-        {        
+        {
             return Process.Start(new ProcessStartInfo
             {
                 FileName = "ffmpeg",
