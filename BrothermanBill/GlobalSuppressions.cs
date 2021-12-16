@@ -6,3 +6,4 @@
 using System.Diagnostics.CodeAnalysis;
 
 [assembly: SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "<Pending>", Scope = "member", Target = "~M:BrothermanBill.Services.SpeechService.ParseStream(System.IO.MemoryStream)")]
+[assembly: SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "<Pending>", Scope = "member", Target = "~M:BrothermanBill.Services.SpeechService.ParseStream(System.IO.Stream)~System.String")]
