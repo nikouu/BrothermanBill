@@ -104,9 +104,13 @@ namespace BrothermanBill.Modules
                     // seems to work if i think about frames and not just bytes
                     var frameData = await pipeReader.ReadAsync();
                     frameQueue.Add(frameData.Buffer.ToArray());
+                    Console.WriteLine(frameQueue.Count);
 
-                    
-                    if (frameQueue.Count > 300)
+                    // 400 frames is approx 8 seconds, 
+                    // the audio file seems really off. it seems difficult to read by other software and it reads it wrong in naudio
+                    // 200 frames didnt work, it seems to get hung up in the ffmpeg stuff
+                    // but 400 frames works
+                    if (frameQueue.Count > 400)
                     {
                         //using (var ffmpeg = CreateFfmpegOut())
                         //using (var ffmpegOutStdinStream = ffmpeg.StandardInput.BaseStream)
@@ -163,6 +167,8 @@ namespace BrothermanBill.Modules
                             output.Position = 0;
                             output.CopyTo(fileStream);
                         }
+
+                        speech.ParseStream(output.ToArray());
 
                         fullBuffer.SetLength(0);
                         frameQueue.Clear();
@@ -227,8 +233,8 @@ namespace BrothermanBill.Modules
                 var tempMemoryStream = new MemoryStream();
                 fileStream.CopyTo(tempMemoryStream);
                 tempMemoryStream.Position = 0;
-                var text = _speechService.ParseStream(tempMemoryStream);
-                ReplyAsync($"{user.Nickname} {text}");
+               // var text = _speechService.ParseStream(tempMemoryStream);
+                //ReplyAsync($"{user.Nickname} {text}");
             }
 
         }
@@ -306,7 +312,7 @@ namespace BrothermanBill.Modules
                 var differenceInMs = (DateTime.Now - currentTicks).TotalMilliseconds;
                 Console.WriteLine(differenceInMs);
 
-                _speechService.ParseStream(inputMemoryStream);
+                //_speechService.ParseStream(inputMemoryStream);
 
                 //var analysis = FFProbe.Analyse(memoryStream);
 

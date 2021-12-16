@@ -18,12 +18,13 @@ namespace BrothermanBill.Services
             _synth = new SpeechSynthesizer();
         }
 
-        public string ParseStream(Stream audioStream)
+        public string ParseStream(byte[] audioBytes)
         {
+            Console.WriteLine("parse stream");
             using (var recognizer = new SpeechRecognitionEngine(new System.Globalization.CultureInfo("en-NZ")))
-            {       
+            {
 
-  
+
                 recognizer.LoadGrammar(new Grammar(new GrammarBuilder("brother man bill")));
                 recognizer.LoadGrammar(new Grammar(new GrammarBuilder("apple")));
                 recognizer.LoadGrammar(new Grammar(new GrammarBuilder("play")));
@@ -36,6 +37,8 @@ namespace BrothermanBill.Services
                 recognizer.SpeechRecognitionRejected += recognizer_SpeechRecognitionRejected;
                 recognizer.SpeechHypothesized += recognizer_SpeechHypothesized;
                 recognizer.SpeechDetected += recognizer_SpeechDetected;
+
+                using var audioStream = new MemoryStream(audioBytes);
 
                 // Configure input to the speech recognizer.  
                 // found this out by opening the dumped file and opening VLC to see codec information for the file when playing
