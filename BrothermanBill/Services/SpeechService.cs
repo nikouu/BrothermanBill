@@ -18,9 +18,9 @@ namespace BrothermanBill.Services
             _synth = new SpeechSynthesizer();
         }
 
-        public string ParseStream(byte[] audioBytes)
+        public string RecognizeSpeech(byte[] audioBytes)
         {
-            Console.WriteLine("parse stream");
+            Console.WriteLine("RecognizeSpeech");
             using (var recognizer = new SpeechRecognitionEngine(new System.Globalization.CultureInfo("en-NZ")))
             {
 
@@ -44,7 +44,7 @@ namespace BrothermanBill.Services
                 // found this out by opening the dumped file and opening VLC to see codec information for the file when playing
                 recognizer.SetInputToAudioStream(audioStream, new SpeechAudioFormatInfo(44100, AudioBitsPerSample.Eight, AudioChannel.Stereo));        
 
-                Console.WriteLine("detecting text in stream");
+                Console.WriteLine("recognizer starting");
 
                 // perhaps have a stop phrase so it caps everything after?
                  var result = recognizer.Recognize();
