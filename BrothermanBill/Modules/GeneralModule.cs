@@ -168,7 +168,7 @@ namespace BrothermanBill.Modules
                             output.CopyTo(fileStream);
                         }
 
-                        speech.ParseStream(output.ToArray());
+                        speech.RecognizeSpeech(output.ToArray());
 
                         fullBuffer.SetLength(0);
                         frameQueue.Clear();
@@ -179,6 +179,7 @@ namespace BrothermanBill.Modules
             });
         }
 
+        //  https://github.com/jfantonopoulos/Misaka/blob/002975680ce75500c1b72ddaf2289674c9e17e55/Misaka/Services/AudioService.c
         // consider https://stackoverflow.com/questions/1682902/streaming-input-to-system-speech-recognition-speechrecognitionengine
         // for unlimited stream for parse over voice stuff
         public async Task<byte[]> BufferIncomingStream(AudioInStream e, int time = 3)
@@ -205,122 +206,6 @@ namespace BrothermanBill.Modules
             });
         }
 
-        // https://github.com/jfantonopoulos/Misaka/blob/002975680ce75500c1b72ddaf2289674c9e17e55/Misaka/Services/AudioService.cs
-        public async Task ListenUserAsync2(IGuildUser user)
-        {
-            var socketUser = (user as SocketGuildUser);
-            var userAduioStream = (InputStream)socketUser.AudioStream;
-            var currentTicks = DateTime.Now;
-
-            var memoryStream = new MemoryStream(await BufferIncomingStream(userAduioStream, 5));
-
-            using (var fileStream = new FileStream(@$"C:\lmao2\{currentTicks.Ticks}.bin", FileMode.Create))
-            {
-
-                memoryStream.CopyTo(fileStream);
-            }
-
-            memoryStream.Position = 0;
-            using (var process = CreateFfmpegOut(@$"C:\lmao2\{currentTicks.Ticks}.bin"))
-            using (var fileStream = new FileStream(@$"C:\lmao2\{currentTicks.Ticks}.wav", FileMode.Create))
-            {
-                process.StandardOutput.BaseStream.CopyTo(fileStream);
-                //outputMemoryStream.CopyTo(fileStream);
-            }
-
-            using (var fileStream = new FileStream(@$"C:\lmao2\{currentTicks.Ticks}.wav", FileMode.Open))
-            {
-                var tempMemoryStream = new MemoryStream();
-                fileStream.CopyTo(tempMemoryStream);
-                tempMemoryStream.Position = 0;
-               // var text = _speechService.ParseStream(tempMemoryStream);
-                //ReplyAsync($"{user.Nickname} {text}");
-            }
-
-        }
-
-
-        public async Task ListenUserAsync(IGuildUser user)
-
-        {
-            var socketUser = (user as SocketGuildUser);
-            var userAduioStream = (InputStream)socketUser.AudioStream;
-
-            var recordingTimeInSeconds = 4;
-            var startListeningTime = DateTime.Now;
-
-            //using (var ffmpeg = CreateFfmpegOut())
-            //using (var ffmpegOutStdinStream = ffmpeg.StandardInput.BaseStream)
-            //using (var ffmpegStdinStream = ffmpeg.StandardOutput.BaseStream)
-            using (var inputMemoryStream = new MemoryStream())
-            using (var outputMemoryStream = new MemoryStream())
-            {
-                try
-                {
-                    var buffer = new byte[4096];
-                    // this will wait until there is audio in order to pop the recording time limit. i.e. if its silent before the recording time in seconds pops, it will wait until the next sound to break from the while
-                    while (await userAduioStream.ReadAsync(buffer, 0, buffer.Length) > 0)
-                    {
-                        await inputMemoryStream.WriteAsync(buffer, 0, buffer.Length);
-                        await inputMemoryStream.FlushAsync();
-                    }
-                }
-                finally
-                {
-                    await inputMemoryStream.FlushAsync();
-                    //await ffmpegStdinStream.FlushAsync();
-                    //ffmpegStdinStream.Close();
-                    //ffmpeg.Close();
-                }
-
-                Console.WriteLine(inputMemoryStream.Length);
-                inputMemoryStream.Position = 0; //THIS WAS IT
-
-                var currentTicks = DateTime.Now;
-
-
-
-                //await FFMpegArguments.FromPipeInput(new StreamPipeSource(inputMemoryStream), options => options
-                //    .WithCustomArgument("-ac 2")
-                //    .WithCustomArgument("-f s16le")
-                //    //.WithCustomArgument("-ar 48000")
-                //    )
-                //    .OutputToPipe(new StreamPipeSink(outputMemoryStream), options => options
-                //    .WithCustomArgument("-acodec pcm_u8")
-                //    .WithCustomArgument("-ar 48000")
-                //    .WithCustomArgument("-f wav")
-                //    ).ProcessAsynchronously();
-
-
-                outputMemoryStream.Position = 0;
-
-
-                using (var fileStream = new FileStream(@$"C:\lmao2\{currentTicks.Ticks}.bin", FileMode.Create))
-                {
-
-                    inputMemoryStream.CopyTo(fileStream);
-                }
-
-                outputMemoryStream.Position = 0;
-                using (var process = CreateFfmpegOut(@$"C:\lmao2\{currentTicks.Ticks}.bin"))
-                using (var fileStream = new FileStream(@$"C:\lmao2\{currentTicks.Ticks}.wav", FileMode.Create))
-                {
-                    process.StandardOutput.BaseStream.CopyTo(fileStream);
-                    //outputMemoryStream.CopyTo(fileStream);
-                }
-
-                var differenceInMs = (DateTime.Now - currentTicks).TotalMilliseconds;
-                Console.WriteLine(differenceInMs);
-
-                //_speechService.ParseStream(inputMemoryStream);
-
-                //var analysis = FFProbe.Analyse(memoryStream);
-
-                //FFMpegArguments.FromPipeInput(new StreamPipeSource(memoryStream))
-                //    .OutputToFile(@$"C:\lmao2\{DateTime.Now.Ticks}.wav")
-                //    .ProcessSynchronously();
-            }
-        }
         public static Process CreateFfmpegOut(string filePath)
         {
             return Process.Start(new ProcessStartInfo
@@ -343,31 +228,6 @@ namespace BrothermanBill.Modules
                 RedirectStandardInput = true,
                 RedirectStandardError = true
             });
-        }
-
-
-        [Command("hd")]
-        public async Task HitDebug()
-        {
-            var guild = Context.Guild;
-            var voiceState = Context.User as IVoiceState;
-            var channel = Context.Channel;
-            var iTextChannel = Context.Channel as ITextChannel;
-            var voiceChannel = (Context.User as IVoiceState).VoiceChannel;
-
-
-
-            var audioClient = guild.AudioClient;
-
-            audioClient.StreamCreated += AudioClient_StreamCreated;
-            var streams = audioClient.GetStreams();
-            var inputStream = streams.FirstOrDefault().Value;
-        }
-
-        private async Task AudioClient_StreamCreated(ulong userid, AudioInStream stream)
-        {
-            Console.WriteLine($"ReadFrameAsync: {userid}");
-            var frame = await stream.ReadFrameAsync(System.Threading.CancellationToken.None);
         }
     }
 }
