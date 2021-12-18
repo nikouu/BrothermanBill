@@ -1,4 +1,6 @@
 ﻿using System.Collections.Concurrent;
+using Discord;
+using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
 using Victoria;
 using Victoria.Enums;
@@ -12,10 +14,12 @@ namespace BrothermanBill.Services
         //private readonly ILogger _logger;
         public readonly HashSet<ulong> VoteQueue;
         private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens;
+        private readonly DiscordSocketClient _socketClient;
 
-        public AudioService(LavaNode lavaNode)
+        public AudioService(LavaNode lavaNode, DiscordSocketClient socketClient)
         {
             _lavaNode = lavaNode;
+            _socketClient = socketClient;
             //_logger = loggerFactory.CreateLogger<LavaNode>();
             _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
 
@@ -32,8 +36,11 @@ namespace BrothermanBill.Services
             _lavaNode.OnTrackException += OnTrackException;
             _lavaNode.OnTrackStuck += OnTrackStuck;
             _lavaNode.OnWebSocketClosed += OnWebSocketClosed;
+        }
 
-            VoteQueue = new HashSet<ulong>();
+        public async Task UpdateStatusWithTrackName(string? name = null)
+        {
+            await _socketClient.SetActivityAsync(new Game(name));
         }
 
         private Task OnPlayerUpdated(PlayerUpdateEventArgs arg)
@@ -51,6 +58,7 @@ namespace BrothermanBill.Services
         private async Task OnTrackStarted(TrackStartEventArgs arg)
         {
             await arg.Player.TextChannel.SendMessageAsync($"Now playing: {arg.Track.Title}");
+            await UpdateStatusWithTrackName(arg.Track.Title);
             if (!_disconnectTokens.TryGetValue(arg.Player.VoiceChannel.Id, out var value))
             {
                 return;
@@ -75,8 +83,9 @@ namespace BrothermanBill.Services
             var player = args.Player;
             if (!player.Queue.TryDequeue(out var lavaTrack))
             {
+                
                 await player.TextChannel.SendMessageAsync("Queue completed! Please add more tracks to rock n' roll!");
-                _ = InitiateDisconnectAsync(args.Player, TimeSpan.FromMinutes(10));
+                //_ = InitiateDisconnectAsync(args.Player, TimeSpan.FromMinutes(10));
                 return;
             }
 
@@ -87,8 +96,7 @@ namespace BrothermanBill.Services
             }
 
             await args.Player.PlayAsync(lavaTrack);
-            await args.Player.TextChannel.SendMessageAsync(
-                $"{args.Reason}: {args.Track.Title}\nNow playing: {lavaTrack.Title}");
+            await args.Player.TextChannel.SendMessageAsync($"{args.Reason}: {args.Track.Title}\nNow playing: {lavaTrack.Title}");
         }
 
         private async Task InitiateDisconnectAsync(LavaPlayer player, TimeSpan timeSpan)
@@ -111,25 +119,25 @@ namespace BrothermanBill.Services
                 return;
             }
 
+            await UpdateStatusWithTrackName(null);
             await _lavaNode.LeaveAsync(player.VoiceChannel);
             await player.TextChannel.SendMessageAsync("Invite me again sometime, sugar.");
+
         }
 
         private async Task OnTrackException(TrackExceptionEventArgs arg)
         {
             //_logger.LogError($"Track {arg.Track.Title} threw an exception. Please check Lavalink console/logs.");
-            arg.Player.Queue.Enqueue(arg.Track);
-            await arg.Player.TextChannel.SendMessageAsync(
-                $"{arg.Track.Title} has been re-added to queue after throwing an exception.");
+            //arg.Player.Queue.Enqueue(arg.Track);
+            await arg.Player.TextChannel.SendMessageAsync($"Track {arg.Track.Title} could not play. Reason: Stuck");
         }
 
         private async Task OnTrackStuck(TrackStuckEventArgs arg)
         {
             //_logger.LogError(
                // $"Track {arg.Track.Title} got stuck for {arg.Threshold}ms. Please check Lavalink console/logs.");
-            arg.Player.Queue.Enqueue(arg.Track);
-            await arg.Player.TextChannel.SendMessageAsync(
-                $"{arg.Track.Title} has been re-added to queue after getting stuck.");
+            //arg.Player.Queue.Enqueue(arg.Track);
+            await arg.Player.TextChannel.SendMessageAsync($"Track {arg.Track.Title} could not play. Reason: Stuck");
         }
 
         private Task OnWebSocketClosed(WebSocketClosedEventArgs arg)
@@ -137,5 +145,7 @@ namespace BrothermanBill.Services
             //_logger.LogCritical($"Discord WebSocket connection closed with following reason: {arg.Reason}");
             return Task.CompletedTask;
         }
+
+
     }
 }

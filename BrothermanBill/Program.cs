@@ -40,16 +40,16 @@ await using var services = new ServiceCollection()
         CaseSensitiveCommands = true,
         LogLevel = LogSeverity.Debug
     })
-    //.AddLavaNode(x => x.SelfDeaf = false)
+    .AddLavaNode(x => x.SelfDeaf = false)
     .BuildServiceProvider();
 
 
 var commands = services.GetRequiredService<CommandService>();
 var socketClient = services.GetRequiredService<DiscordSocketClient>();
 var commandHandler = services.GetRequiredService<CommandHandlerService>();
-//var lavaNode = services.GetRequiredService<LavaNode>();
+var lavaNode = services.GetRequiredService<LavaNode>();
 
-//await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
+await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
 
 await commandHandler.InstallCommandsAsync();
 
@@ -85,7 +85,6 @@ socketClient.Ready += async () =>
         categoryId = newCategory.Id;
     }
 
-
     var roomId = guild.Channels.FirstOrDefault(x => x.Name == "kkona-truck")?.Id ?? (ulong)0;
 
 
@@ -102,10 +101,10 @@ socketClient.Ready += async () =>
     var channel = socketClient.GetChannel(roomId) as IMessageChannel;
     await channel.SendMessageAsync($"ping {services.GetRequiredService<CommandHandlerService>().InstanceId}");
 
-    //if (!lavaNode.IsConnected)
-    //{
-    //    await lavaNode.ConnectAsync();
-    //}
+    if (!lavaNode.IsConnected)
+    {
+        await lavaNode.ConnectAsync();
+    }
 
 
     return;
