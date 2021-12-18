@@ -17,7 +17,7 @@ namespace BrothermanBill.Modules
     // https://github.com/Yucked/Victoria/wiki
     // https://raw.githubusercontent.com/freyacodes/Lavalink/master/LavalinkServer/application.yml.example
     // perhaps have a play now, that just injects a new track immediately, hten goes back to the old one
-    /*
+
     public class VictoriaAudioModule : ModuleBase<SocketCommandContext>
     {
         private readonly LavaNode _lavaNode;
@@ -87,7 +87,7 @@ namespace BrothermanBill.Modules
 
         [Command("Play")]
         public async Task PlayAsync([Remainder] string searchQuery)
-        {            
+        {
             var fullQuery = searchQuery;
 
             if (string.IsNullOrWhiteSpace(searchQuery))
@@ -214,7 +214,8 @@ namespace BrothermanBill.Modules
             try
             {
                 await player.StopAsync();
-                await ReplyAsync("No longer playing anything.");
+                await ReplyAsync("Queue finished.");
+                await _audioService.UpdateStatusWithTrackName(null);
             }
             catch (Exception exception)
             {
@@ -239,8 +240,17 @@ namespace BrothermanBill.Modules
 
             try
             {
-                var (oldTrack, currenTrack) = await player.SkipAsync();
-                await ReplyAsync($"Skipped: {oldTrack.Title}\nNow Playing: {player.Track.Title}");
+                if (!player.Queue.Any())
+                {
+                    await StopAsync();
+                    return;
+                }
+                else
+                {
+                    var (oldTrack, currenTrack) = await player.SkipAsync();
+                    await ReplyAsync($"Skipped: {oldTrack.Title}\nNow Playing: {player.Track.Title}");
+                }
+
             }
             catch (Exception exception)
             {
@@ -411,5 +421,5 @@ namespace BrothermanBill.Modules
 
     }
 
-    */
+
 }
