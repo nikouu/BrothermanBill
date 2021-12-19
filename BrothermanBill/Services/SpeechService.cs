@@ -42,14 +42,14 @@ namespace BrothermanBill.Services
 
                 // Configure input to the speech recognizer.  
                 // found this out by opening the dumped file and opening VLC to see codec information for the file when playing
-                recognizer.SetInputToAudioStream(audioStream, new SpeechAudioFormatInfo(44100, AudioBitsPerSample.Eight, AudioChannel.Stereo));        
+                recognizer.SetInputToAudioStream(audioStream, new SpeechAudioFormatInfo(44100, AudioBitsPerSample.Eight, AudioChannel.Stereo));
 
                 Console.WriteLine("recognizer starting");
 
                 // perhaps have a stop phrase so it caps everything after?
-                 var result = recognizer.Recognize();
+                var result = recognizer.Recognize();
 
-               // _ = new Task(() => recognizer.RecognizeAsync(RecognizeMode.Multiple));
+                // _ = new Task(() => recognizer.RecognizeAsync(RecognizeMode.Multiple));
                 ;
 
                 Console.WriteLine($"Recognize result:{result?.Text}");
@@ -63,6 +63,53 @@ namespace BrothermanBill.Services
                 //}
             }
         }
+
+        public void RecognizeSpeech(Stream audioStream)
+        {
+            Console.WriteLine("RecognizeSpeech");
+            var recognizer = new SpeechRecognitionEngine(new System.Globalization.CultureInfo("en-NZ"));
+
+
+
+            recognizer.LoadGrammar(new Grammar(new GrammarBuilder("brother man bill")));
+            recognizer.LoadGrammar(new Grammar(new GrammarBuilder("apple")));
+            recognizer.LoadGrammar(new Grammar(new GrammarBuilder("play")));
+
+            // Create and load a dictation grammar.  this seems to be all the normal words
+            recognizer.LoadGrammar(new DictationGrammar());
+
+            // Add a handler for the speech recognized event.  
+            recognizer.SpeechRecognized += recognizer_SpeechRecognized;
+            recognizer.SpeechRecognitionRejected += recognizer_SpeechRecognitionRejected;
+            recognizer.SpeechHypothesized += recognizer_SpeechHypothesized;
+            recognizer.SpeechDetected += recognizer_SpeechDetected;
+
+
+            // Configure input to the speech recognizer.  
+            // found this out by opening the dumped file and opening VLC to see codec information for the file when playing
+            recognizer.SetInputToAudioStream(audioStream, new SpeechAudioFormatInfo(44100, AudioBitsPerSample.Eight, AudioChannel.Stereo));
+
+            Console.WriteLine("recognizer starting");
+
+            // perhaps have a stop phrase so it caps everything after?
+            //recognizer.RecognizeAsync(RecognizeMode.Multiple);
+
+            // this kinda works, but there is an issue that for it, it seems like a one long string and it doesnt end the recognition 
+            recognizer.RecognizeAsync(RecognizeMode.Multiple);
+
+
+            // Console.WriteLine($"Recognize result:{result?.Text}");
+
+            //return "";
+
+            // Keep the console window open.  
+            //while (true)
+            //{
+            //    Console.ReadLine();
+            //}
+
+        }
+
         static void recognizer_SpeechDetected(object sender, SpeechDetectedEventArgs e)
         {
             Console.WriteLine("Detected speech: ");

@@ -8,7 +8,7 @@ using Victoria.EventArgs;
 
 namespace BrothermanBill.Services
 {
-    public sealed class AudioService
+    public sealed class VictoriaAudioService
     {
         private readonly LavaNode _lavaNode;
         //private readonly ILogger _logger;
@@ -16,7 +16,7 @@ namespace BrothermanBill.Services
         private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens;
         private readonly DiscordSocketClient _socketClient;
 
-        public AudioService(LavaNode lavaNode, DiscordSocketClient socketClient)
+        public VictoriaAudioService(LavaNode lavaNode, DiscordSocketClient socketClient)
         {
             _lavaNode = lavaNode;
             _socketClient = socketClient;
@@ -80,11 +80,13 @@ namespace BrothermanBill.Services
                 return;
             }
 
+            // if paused then resume
+
             var player = args.Player;
             if (!player.Queue.TryDequeue(out var lavaTrack))
             {
                 
-                await player.TextChannel.SendMessageAsync("Queue completed! Please add more tracks to rock n' roll!");
+                await player.TextChannel.SendMessageAsync("Queue completed.");
                 //_ = InitiateDisconnectAsync(args.Player, TimeSpan.FromMinutes(10));
                 return;
             }
@@ -121,7 +123,7 @@ namespace BrothermanBill.Services
 
             await UpdateStatusWithTrackName(null);
             await _lavaNode.LeaveAsync(player.VoiceChannel);
-            await player.TextChannel.SendMessageAsync("Invite me again sometime, sugar.");
+            //await player.TextChannel.SendMessageAsync("Invite me again sometime, sugar.");
 
         }
 
@@ -129,7 +131,7 @@ namespace BrothermanBill.Services
         {
             //_logger.LogError($"Track {arg.Track.Title} threw an exception. Please check Lavalink console/logs.");
             //arg.Player.Queue.Enqueue(arg.Track);
-            await arg.Player.TextChannel.SendMessageAsync($"Track {arg.Track.Title} could not play. Reason: Stuck");
+            await arg.Player.TextChannel.SendMessageAsync($"Track {arg.Track.Title} could not play.");
         }
 
         private async Task OnTrackStuck(TrackStuckEventArgs arg)
