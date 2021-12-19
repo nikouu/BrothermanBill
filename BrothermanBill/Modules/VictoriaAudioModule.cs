@@ -95,6 +95,14 @@ namespace BrothermanBill.Modules
                 await JoinAsync();
             }
 
+            var player = _lavaNode.GetPlayer(Context.Guild);
+
+            if (player?.Track?.IsStream == true)
+            {
+                await PlayNowAsync(searchQuery);
+                return;
+            }
+
             // is there a better way to do this pattern?
             // do the yt search by default here
             var isValidUrl = Uri.TryCreate(searchQuery, UriKind.Absolute, out var uri);
@@ -111,7 +119,7 @@ namespace BrothermanBill.Modules
                 return;
             }
 
-            var player = _lavaNode.GetPlayer(Context.Guild);
+            //var player = _lavaNode.GetPlayer(Context.Guild);
             if (!string.IsNullOrWhiteSpace(searchResponse.Playlist.Name))
             {
                 player.Queue.Enqueue(searchResponse.Tracks);
