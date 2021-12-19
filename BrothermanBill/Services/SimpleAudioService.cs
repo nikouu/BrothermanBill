@@ -49,7 +49,7 @@ namespace BrothermanBill.Services
         [Command("playSimple", RunMode = RunMode.Async)]
         public async Task PlayCmd([Remainder] string song = "sdaf")
         {
-            await _service.SendAudioAsync(Context.Guild, Context.Channel, song);
+            await _service.SendJoinAudioAsync(Context.Guild, Context.Channel);
         }
     }
 
@@ -90,12 +90,17 @@ namespace BrothermanBill.Services
             }
         }
 
+        public async Task SendJoinAudioAsync(IGuild guild, IMessageChannel channel)
+        {
+            var joinAudioFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "joinSound.mp3");
+            await SendAudioAsync(guild, channel, joinAudioFilePath);
+        }
+
         public async Task SendAudioAsync(IGuild guild, IMessageChannel channel, string path)
         {
             // Your task: Get a full path to the file if the value of 'path' is only a filename.
-            var fullFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "joinSound.mp3");
 
-            if (!File.Exists(fullFilePath))
+            if (!File.Exists(path))
             {
                 await channel.SendMessageAsync("File does not exist.");
                 return;
@@ -104,7 +109,7 @@ namespace BrothermanBill.Services
             if (ConnectedChannels.TryGetValue(guild.Id, out client))
             {
                 //await Log(LogSeverity.Debug, $"Starting playback of {path} in {guild.Name}");
-                using (var ffmpeg = CreateProcess(fullFilePath))
+                using (var ffmpeg = CreateProcess(path))
                 using (var stream = client.CreatePCMStream(AudioApplication.Music))
                 {
                     try { await ffmpeg.StandardOutput.BaseStream.CopyToAsync(stream); }

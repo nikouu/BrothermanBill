@@ -94,23 +94,30 @@ namespace BrothermanBill.Modules
             _ = Task.Run(async () =>
             {
                 var speech = new SpeechService();
-                //using var circularBuffer = new SpeechStreamer(61440);
+                // the prior issues might ahve been the buffer was too small, i was only setting around 10k or less
+                using var circularBuffer = new SpeechStreamer(1000000);
 
                 using var fullBuffer = new MemoryStream();
-                var frameQueue = new List<byte[]>();
+                var frameQueue = new List<byte[]>();             
+
+                speech.RecognizeSpeech(circularBuffer);          
 
                 while (true)
                 {
                     // seems to work if i think about frames and not just bytes
                     var frameData = await pipeReader.ReadAsync();
                     frameQueue.Add(frameData.Buffer.ToArray());
-                    Console.WriteLine(frameQueue.Count);
+
+                    if (frameQueue.Count % 10 == 0)
+                    {
+                        Console.WriteLine(frameQueue.Count);
+                    }                        
 
                     // 400 frames is approx 8 seconds, 
                     // the audio file seems really off. it seems difficult to read by other software and it reads it wrong in naudio
                     // 200 frames didnt work, it seems to get hung up in the ffmpeg stuff
                     // but 400 frames works
-                    if (frameQueue.Count > 400)
+                    if (frameQueue.Count > 100)
                     {
                         //using (var ffmpeg = CreateFfmpegOut())
                         //using (var ffmpegOutStdinStream = ffmpeg.StandardInput.BaseStream)
@@ -157,7 +164,7 @@ namespace BrothermanBill.Modules
                         using var output = new MemoryStream();
 
                         var convert = await Cli.Wrap("ffmpeg")
-                        .WithArguments("-ac 2 -f s16le -ar 48000 -i pipe:0 -acodec pcm_u8 -ar 44100 -f wav -")
+                        .WithArguments("-hide_banner -loglevel panic -ac 2 -f s16le -ar 48000 -i pipe:0 -acodec pcm_u8 -ar 44100 -f wav -")
                         .WithStandardInputPipe(PipeSource.FromBytes(buffer))
                         .WithStandardOutputPipe(PipeTarget.ToStream(output))                        
                         .ExecuteAsync();
@@ -168,8 +175,10 @@ namespace BrothermanBill.Modules
                             output.CopyTo(fileStream);
                         }
 
-                        speech.RecognizeSpeech(output.ToArray());
+                        Console.WriteLine("writing to circular buffer");
+                        circularBuffer.Write(buffer);
 
+                       
                         fullBuffer.SetLength(0);
                         frameQueue.Clear();
                     }
