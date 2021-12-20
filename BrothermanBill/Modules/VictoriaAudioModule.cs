@@ -1,6 +1,11 @@
 ﻿using BrothermanBill.Services;
 using Discord;
+using Discord.Audio;
+using Discord.Audio.Streams;
 using Discord.Commands;
+using Discord.WebSocket;
+using System.Diagnostics;
+using System.Net;
 using Victoria;
 using Victoria.Enums;
 using Victoria.Responses.Search;
@@ -23,6 +28,24 @@ namespace BrothermanBill.Modules
             _audioService = audioService;
         }
 
+        [Command("testaudio", RunMode = RunMode.Async)]
+        public async Task Test()
+        {
+            var voiceChannel = (Context.User as IVoiceState).VoiceChannel;
+            var users = await voiceChannel.GetUsersAsync().ToListAsync();
+
+            var socketUsers = users[0].Select(x => x as SocketGuildUser).ToList();
+
+            var aa = socketUsers[0];
+            var audioStreams = Context.Guild?.AudioClient?.GetStreams();
+        }
+
+        [Command("TestSendAudio", RunMode = RunMode.Async)]
+        public async Task TestSendAudio()
+        {
+            
+        }
+
         [Command("Join", RunMode = RunMode.Async)]
         public async Task JoinAsync()
         {
@@ -42,7 +65,9 @@ namespace BrothermanBill.Modules
             try
             {
                 var f = await _lavaNode.JoinAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
-                await PlayAsync(@"https://www.youtube.com/watch?v=7nQ2oiVqKHw");
+                var joinAudioFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "joinSound.mp3");
+
+                await PlayAsync(@"C:\temp\joinSound.mp3");
                 await ReplyAsync($"Joined {voiceState.VoiceChannel.Name}!");
 
             }
@@ -109,13 +134,23 @@ namespace BrothermanBill.Modules
 
             if (!isValidUrl)
             {
-                fullQuery = "ytsearch: " + searchQuery;
+                // if there are no spaces before the colon, im badly going to assume its a query that specifies a search type for lavalink
+                if (!searchQuery.Split(":")[0].Contains(" "))
+                {
+                   
+                }
+                else
+                {
+                    // default to youtube
+                    fullQuery = "ytsearch: " + searchQuery;
+                }
+
             }
 
             var searchResponse = await _lavaNode.SearchAsync(SearchType.Direct, fullQuery);
             if (searchResponse.Status is SearchStatus.LoadFailed or SearchStatus.NoMatches)
             {
-                await ReplyAsync($"I wasn't able to find anything for `{searchQuery}`.");
+                //await ReplyAsync($"I wasn't able to find anything for `{searchQuery}`.");
                 return;
             }
 

@@ -15,7 +15,7 @@ using Victoria;
 // have it check github for new releases? 
 // have local server for logs
 
-await StartLavalinkAsync();
+StartLavalinkAsync();
 
 
 
@@ -116,7 +116,7 @@ socketClient.Ready += async () =>
 };
 
 // https://github.com/d4n3436/Fergun/blob/58fceda8463ee67a49708547fc20f928a8748361/src/FergunClient.cs#L232
-static async Task StartLavalinkAsync()
+static void StartLavalinkAsync()
 {
     var processList = Process.GetProcessesByName("java");
     if (processList.Length == 0)
@@ -136,6 +136,8 @@ static async Task StartLavalinkAsync()
 
         Process.Start(process);
     }
+
+    return;
 }
 
 

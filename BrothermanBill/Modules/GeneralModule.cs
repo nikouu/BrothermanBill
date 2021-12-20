@@ -49,6 +49,7 @@ namespace BrothermanBill.Modules
             var users = await voiceChannel.GetUsersAsync().ToListAsync();
             foreach (var user in users[0])
             {
+                var h = (user as SocketGuildUser);
                 if (user.IsBot)
                     continue;
 
