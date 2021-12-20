@@ -7,6 +7,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System.Diagnostics;
 using System.Reflection;
 using Victoria;
 
@@ -14,12 +15,16 @@ using Victoria;
 // have it check github for new releases? 
 // have local server for logs
 
+await StartLavalinkAsync();
+
+
+
 // this could also be the new .net6 ConfigurationManager
 var config = new ConfigurationBuilder()
-                 .SetBasePath(Directory.GetCurrentDirectory())
-                 .AddJsonFile("appsettings.json")
-                 .AddUserSecrets<Program>()
-                 .Build();
+             .SetBasePath(Directory.GetCurrentDirectory())
+             .AddJsonFile("appsettings.json")
+             .AddUserSecrets<Program>()
+             .Build();
 
 // https://dsharpplus.github.io/natives/index.html
 // https://docs.microsoft.com/en-us/dotnet/core/deploying/single-file
@@ -110,8 +115,28 @@ socketClient.Ready += async () =>
     return;
 };
 
+// https://github.com/d4n3436/Fergun/blob/58fceda8463ee67a49708547fc20f928a8748361/src/FergunClient.cs#L232
+static async Task StartLavalinkAsync()
+{
+    var processList = Process.GetProcessesByName("java");
+    if (processList.Length == 0)
+    {
+        string lavalinkFile = Path.Combine(AppContext.BaseDirectory, "Lavalink", "Lavalink.jar");
+        if (!File.Exists(lavalinkFile)) return;
 
+        var process = new ProcessStartInfo
+        {
+            FileName = "java",
+            Arguments = $"-jar \"{Path.Combine(AppContext.BaseDirectory, "Lavalink")}/Lavalink.jar\"",
+            WorkingDirectory = Path.Combine(AppContext.BaseDirectory, "Lavalink"),
+            UseShellExecute = true,
+            CreateNoWindow = false,
+            WindowStyle = ProcessWindowStyle.Minimized
+        };
 
+        Process.Start(process);
+    }
+}
 
 
 await Task.Delay(Timeout.Infinite);
