@@ -46,6 +46,7 @@ namespace BrothermanBill.Modules
 
             try
             {
+                await _lavaNode.JoinAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
                 await ReplyAsync($"Joined {voiceState.VoiceChannel.Name}!");
 
             }
