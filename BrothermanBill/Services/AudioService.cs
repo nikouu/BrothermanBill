@@ -8,7 +8,7 @@ using Victoria.EventArgs;
 
 namespace BrothermanBill.Services
 {
-    public sealed class VictoriaAudioService
+    public sealed class AudioService
     {
         private readonly LavaNode _lavaNode;
         //private readonly ILogger _logger;
@@ -16,7 +16,7 @@ namespace BrothermanBill.Services
         private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens;
         private readonly DiscordSocketClient _socketClient;
 
-        public VictoriaAudioService(LavaNode lavaNode, DiscordSocketClient socketClient)
+        public AudioService(LavaNode lavaNode, DiscordSocketClient socketClient)
         {
             _lavaNode = lavaNode;
             _socketClient = socketClient;

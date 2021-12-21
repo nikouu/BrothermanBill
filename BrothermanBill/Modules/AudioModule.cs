@@ -17,33 +17,15 @@ namespace BrothermanBill.Modules
     // https://raw.githubusercontent.com/freyacodes/Lavalink/master/LavalinkServer/application.yml.example
     // perhaps have a play now, that just injects a new track immediately, hten goes back to the old one
 
-    public class VictoriaAudioModule : ModuleBase<SocketCommandContext>
+    public class AudioModule : ModuleBase<SocketCommandContext>
     {
         private readonly LavaNode _lavaNode;
-        private readonly VictoriaAudioService _audioService;
+        private readonly AudioService _audioService;
 
-        public VictoriaAudioModule(LavaNode lavaNode, VictoriaAudioService audioService)
+        public AudioModule(LavaNode lavaNode, AudioService audioService)
         {
             _lavaNode = lavaNode;
             _audioService = audioService;
-        }
-
-        [Command("testaudio", RunMode = RunMode.Async)]
-        public async Task Test()
-        {
-            var voiceChannel = (Context.User as IVoiceState).VoiceChannel;
-            var users = await voiceChannel.GetUsersAsync().ToListAsync();
-
-            var socketUsers = users[0].Select(x => x as SocketGuildUser).ToList();
-
-            var aa = socketUsers[0];
-            var audioStreams = Context.Guild?.AudioClient?.GetStreams();
-        }
-
-        [Command("TestSendAudio", RunMode = RunMode.Async)]
-        public async Task TestSendAudio()
-        {
-            
         }
 
         [Command("Join", RunMode = RunMode.Async)]
@@ -64,10 +46,6 @@ namespace BrothermanBill.Modules
 
             try
             {
-                var f = await _lavaNode.JoinAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
-                var joinAudioFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "joinSound.mp3");
-
-                await PlayAsync(@"C:\temp\joinSound.mp3");
                 await ReplyAsync($"Joined {voiceState.VoiceChannel.Name}!");
 
             }
@@ -96,7 +74,6 @@ namespace BrothermanBill.Modules
             try
             {
                 await _lavaNode.LeaveAsync(voiceChannel);
-                //await ReplyAsync($"I've left {voiceChannel.Name}!");
             }
             catch (Exception exception)
             {
