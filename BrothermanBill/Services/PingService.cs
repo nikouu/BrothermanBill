@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.WebSocket;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,9 +12,11 @@ namespace BrothermanBill.Services
     public class PingService
     {
         private readonly DiscordSocketClient _client;
-        public PingService(DiscordSocketClient client)
+        private readonly ILogger _logger;
+        public PingService(DiscordSocketClient client, ILogger<PingService> logger)
         {
             _client = client;
+            _logger = logger;
         }
 
         // A cheap way to ensure only one instance is running at a time. 
@@ -21,6 +24,7 @@ namespace BrothermanBill.Services
         // and as such, exit this instance. Discord itself is the free "state storage".
         public async Task<bool> HandlePingAsync(SocketMessage messageParam, Guid instanceId)
         {
+            _logger.LogInformation($"Handling ping: {instanceId}");
             var message = messageParam as SocketUserMessage;
             var messageString = message.ToString();
 
@@ -52,7 +56,7 @@ namespace BrothermanBill.Services
 
                 if (Guid.TryParse(messageArray[1], out var newGuid))
                 {
-                    Console.WriteLine($"Brotherman Bill instance {newGuid} already running. Shutting down.");
+                    _logger.LogInformation($"Brotherman Bill instance {newGuid} already running. Shutting down.");
                     await _client.StopAsync();
                     Console.WriteLine("Press any key to close...");
                     Console.ReadKey();
@@ -60,7 +64,7 @@ namespace BrothermanBill.Services
                 }
                 else
                 {
-                    Console.WriteLine("Unknown message.");
+                    _logger.LogWarning("Unknown message");
                 }
             }
 

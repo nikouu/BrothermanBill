@@ -15,17 +15,17 @@ namespace BrothermanBill.Services
         public readonly HashSet<ulong> VoteQueue;
         private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens;
         private readonly DiscordSocketClient _socketClient;
+        private readonly ILogger _logger;
 
-        public AudioService(LavaNode lavaNode, DiscordSocketClient socketClient)
+        public AudioService(LavaNode lavaNode, DiscordSocketClient socketClient, ILoggerFactory loggerFactory)
         {
             _lavaNode = lavaNode;
             _socketClient = socketClient;
-            //_logger = loggerFactory.CreateLogger<LavaNode>();
+            _logger = loggerFactory.CreateLogger<LavaNode>();
             _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
 
             _lavaNode.OnLog += arg => {
-                //_logger.Log(arg.Severity.FromSeverityToLevel(), arg.Exception, arg.Message);
-                Console.WriteLine(arg.Message);
+                _logger.LogInformation(arg.Message);
                 return Task.CompletedTask;
             };
 
@@ -40,18 +40,19 @@ namespace BrothermanBill.Services
 
         public async Task UpdateStatusWithTrackName(string? name = null)
         {
+            _logger.LogInformation($"Updated currently playing status to: {name}");
             await _socketClient.SetActivityAsync(new Game(name));
         }
 
         private Task OnPlayerUpdated(PlayerUpdateEventArgs arg)
         {
-            //_logger.LogInformation($"Track update received for {arg.Track.Title}: {arg.Position}");
+            _logger.LogInformation($"Track update received for {arg.Track.Title}: {arg.Position}");
             return Task.CompletedTask;
         }
 
         private Task OnStatsReceived(StatsEventArgs arg)
         {
-            //_logger.LogInformation($"Lavalink has been up for {arg.Uptime}.");
+            _logger.LogInformation($"Lavalink has been up for {arg.Uptime}.");
             return Task.CompletedTask;
         }
 
@@ -129,22 +130,22 @@ namespace BrothermanBill.Services
 
         private async Task OnTrackException(TrackExceptionEventArgs arg)
         {
-            //_logger.LogError($"Track {arg.Track.Title} threw an exception. Please check Lavalink console/logs.");
+            _logger.LogError($"Track {arg.Track.Title} threw an exception. Please check Lavalink console/logs.");
             //arg.Player.Queue.Enqueue(arg.Track);
             await arg.Player.TextChannel.SendMessageAsync($"Track {arg.Track.Title} could not play.");
         }
 
         private async Task OnTrackStuck(TrackStuckEventArgs arg)
         {
-            //_logger.LogError(
-               // $"Track {arg.Track.Title} got stuck for {arg.Threshold}ms. Please check Lavalink console/logs.");
+            _logger.LogError(
+                $"Track {arg.Track.Title} got stuck for {arg.Threshold}ms. Please check Lavalink console/logs.");
             //arg.Player.Queue.Enqueue(arg.Track);
             await arg.Player.TextChannel.SendMessageAsync($"Track {arg.Track.Title} could not play. Reason: Stuck");
         }
 
         private Task OnWebSocketClosed(WebSocketClosedEventArgs arg)
         {
-            //_logger.LogCritical($"Discord WebSocket connection closed with following reason: {arg.Reason}");
+            _logger.LogCritical($"Discord WebSocket connection closed with following reason: {arg.Reason}");
             return Task.CompletedTask;
         }
 

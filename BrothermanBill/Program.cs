@@ -7,6 +7,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Reflection;
 using Victoria;
@@ -37,6 +38,7 @@ await using var services = new ServiceCollection()
     .AddSingleton<CommandHandlerService>()
     .AddSingleton<PingService>()
     .AddSingleton<AudioService>()
+    .AddSingleton<MemeService>()
     .AddSingleton<SimpleAudioService>()
     .Configure<InstanceId>(x => x.Id = Guid.NewGuid())
     .Configure<CommandServiceConfig>(x => new CommandServiceConfig
@@ -45,6 +47,7 @@ await using var services = new ServiceCollection()
         LogLevel = LogSeverity.Debug
     })
     .AddLavaNode(x => x.SelfDeaf = false)
+    .AddLogging(builder => builder.AddConsole())
     .BuildServiceProvider();
 
 
@@ -52,22 +55,24 @@ var commands = services.GetRequiredService<CommandService>();
 var socketClient = services.GetRequiredService<DiscordSocketClient>();
 var commandHandler = services.GetRequiredService<CommandHandlerService>();
 var lavaNode = services.GetRequiredService<LavaNode>();
+var loggerFactory = services.GetRequiredService<ILoggerFactory>();
+var logger = loggerFactory.CreateLogger<Program>();
 
 await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
 
 await commandHandler.InstallCommandsAsync();
 
-Console.WriteLine($"Instance ID: {commandHandler.InstanceId}");
+logger.LogInformation($"Instance ID: {commandHandler.InstanceId}");
 
 socketClient.Log += (LogMessage msg) =>
 {
-    Console.WriteLine(msg.ToString());
+    logger.LogInformation(msg.ToString());
     return Task.CompletedTask;
 };
 
 commands.Log += (LogMessage msg) =>
 {
-    Console.WriteLine(msg.ToString());
+    logger.LogInformation(msg.ToString());
     return Task.CompletedTask;
 };
 //var discord = new DiscordWrapper();
