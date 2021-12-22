@@ -219,6 +219,16 @@ namespace BrothermanBill.Modules
             });
         }
 
+        [Command("playtest")]
+        public async Task PlayWithoutQueue()
+        {
+            var player = _lavaNode.GetPlayer(Context.Guild);
+            var searchResponse = await _lavaNode.SearchAsync(SearchType.Direct, "ytsearch:christmas lo fi");
+            var track = searchResponse.Tracks.FirstOrDefault();
+
+            await player.PlayAsync(track);
+        }
+
 
         [Command("Pause")]
         public async Task PauseAsync()

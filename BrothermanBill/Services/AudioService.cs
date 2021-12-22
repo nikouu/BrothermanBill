@@ -17,11 +17,11 @@ namespace BrothermanBill.Services
         private readonly DiscordSocketClient _socketClient;
         private readonly ILogger _logger;
 
-        public AudioService(LavaNode lavaNode, DiscordSocketClient socketClient, ILoggerFactory loggerFactory)
+        public AudioService(LavaNode lavaNode, DiscordSocketClient socketClient, ILogger<AudioService> logger)
         {
             _lavaNode = lavaNode;
             _socketClient = socketClient;
-            _logger = loggerFactory.CreateLogger<LavaNode>();
+            _logger = logger;
             _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
 
             _lavaNode.OnLog += arg => {
@@ -46,7 +46,7 @@ namespace BrothermanBill.Services
 
         private Task OnPlayerUpdated(PlayerUpdateEventArgs arg)
         {
-            _logger.LogInformation($"Track update received for {arg.Track.Title}: {arg.Position}");
+            _logger.LogInformation($"Track update received for {arg.Track?.Title}: {arg.Position}");
             return Task.CompletedTask;
         }
 
@@ -98,7 +98,11 @@ namespace BrothermanBill.Services
                 return;
             }
 
-            await args.Player.PlayAsync(lavaTrack);
+            await args.Player.PlayAsync(x =>
+            {
+                x.Track = lavaTrack;
+                x.StartTime = lavaTrack.Position;
+            });
             await args.Player.TextChannel.SendMessageAsync($"{args.Reason}: {args.Track.Title}\nNow playing: {lavaTrack.Title}");
         }
 
