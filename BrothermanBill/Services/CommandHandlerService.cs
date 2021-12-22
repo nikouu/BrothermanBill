@@ -2,6 +2,7 @@
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
@@ -14,20 +15,25 @@ namespace BrothermanBill
 {
     public class CommandHandlerService
     {
+        public readonly Guid InstanceId;
         private readonly DiscordSocketClient _client;
         private readonly CommandService _commands;
         private readonly IServiceProvider _services;
         private readonly PingService _pingService;
-        public readonly Guid InstanceId;
+        private readonly ILogger _logger;
+        
+        
 
         // Retrieve client and CommandService instance via ctor
-        public CommandHandlerService(DiscordSocketClient client, CommandService commands, IServiceProvider services, IOptions<InstanceId> options, PingService pingService)
+        public CommandHandlerService(DiscordSocketClient client, CommandService commands, IServiceProvider services, IOptions<InstanceId> options, PingService pingService, ILogger<CommandHandlerService> logger)
         {
+            InstanceId = options.Value.Id;
             _commands = commands;
             _client = client;
             _services = services;
             _pingService = pingService;
-            InstanceId = options.Value.Id; 
+            _logger = logger;
+            
         }
 
         public async Task InstallCommandsAsync()
@@ -52,9 +58,9 @@ namespace BrothermanBill
         {
             // Don't process the command if it was a system message
             var message = messageParam as SocketUserMessage;
-            if (message == null) return;         
+            if (message == null) return;
 
-            Console.WriteLine($"Recieved Message: {message}");
+            _logger.LogInformation($"Recieved Message: {message}");
             // Create a number to track where the prefix ends and the command begins
             int argPos = 0;
 
