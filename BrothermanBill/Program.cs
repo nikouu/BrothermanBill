@@ -39,6 +39,7 @@ await using var services = new ServiceCollection()
     .AddSingleton<PingService>()
     .AddSingleton<AudioService>()
     .AddSingleton<MemeService>()
+    .AddSingleton<EmbedHandler>()
     .AddSingleton<SimpleAudioService>()
     .Configure<InstanceId>(x => x.Id = Guid.NewGuid())
     .Configure<CommandServiceConfig>(x => new CommandServiceConfig

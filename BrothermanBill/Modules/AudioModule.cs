@@ -4,6 +4,7 @@ using Discord.Audio;
 using Discord.Audio.Streams;
 using Discord.Commands;
 using Discord.WebSocket;
+using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Net;
 using Victoria;
@@ -21,11 +22,17 @@ namespace BrothermanBill.Modules
     {
         private readonly LavaNode _lavaNode;
         private readonly AudioService _audioService;
+        private readonly EmbedHandler _embedHandler;
+        private readonly ILogger _logger;
 
-        public AudioModule(LavaNode lavaNode, AudioService audioService)
+        private LavaPlayer Player => _lavaNode.GetPlayer(Context.Guild);
+
+        public AudioModule(LavaNode lavaNode, AudioService audioService, EmbedHandler embedHandler, ILogger<AudioModule> logger)
         {
             _lavaNode = lavaNode;
             _audioService = audioService;
+            _embedHandler = embedHandler;
+            _logger = logger;
         }
 
         [Command("Join", RunMode = RunMode.Async)]
@@ -47,7 +54,7 @@ namespace BrothermanBill.Modules
             try
             {
                 await _lavaNode.JoinAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
-                await ReplyAsync($"Joined {voiceState.VoiceChannel.Name}!");
+                _logger.LogInformation($"Joined {voiceState.VoiceChannel.Name}!");
 
             }
             catch (Exception exception)
@@ -85,8 +92,6 @@ namespace BrothermanBill.Modules
         [Command("Play")]
         public async Task PlayAsync([Remainder] string searchQuery)
         {
-            var fullQuery = searchQuery;
-
             if (string.IsNullOrWhiteSpace(searchQuery))
             {
                 await ReplyAsync("Please provide search terms.");
@@ -98,61 +103,41 @@ namespace BrothermanBill.Modules
                 await JoinAsync();
             }
 
-            var player = _lavaNode.GetPlayer(Context.Guild);
-
-            if (player?.Track?.IsStream == true)
+            if (Player?.Track?.IsStream == true)
             {
                 await PlayNowAsync(searchQuery);
                 return;
             }
 
-            // is there a better way to do this pattern?
-            // do the yt search by default here
-            var isValidUrl = Uri.TryCreate(searchQuery, UriKind.Absolute, out var uri);
-
-            if (!isValidUrl)
-            {
-                // if there are no spaces before the colon, im badly going to assume its a query that specifies a search type for lavalink
-                if (!searchQuery.Split(":")[0].Contains(" "))
-                {
-                   
-                }
-                else
-                {
-                    // default to youtube
-                    fullQuery = "ytsearch: " + searchQuery;
-                }
-
-            }
-
-            var searchResponse = await _lavaNode.SearchAsync(SearchType.Direct, fullQuery);
+            var searchResponse = await LavaLinkSearch(searchQuery);
             if (searchResponse.Status is SearchStatus.LoadFailed or SearchStatus.NoMatches)
             {
                 //await ReplyAsync($"I wasn't able to find anything for `{searchQuery}`.");
                 return;
             }
 
-            //var player = _lavaNode.GetPlayer(Context.Guild);
             if (!string.IsNullOrWhiteSpace(searchResponse.Playlist.Name))
             {
-                player.Queue.Enqueue(searchResponse.Tracks);
+                Player.Queue.Enqueue(searchResponse.Tracks);
                 await ReplyAsync($"Enqueued {searchResponse.Tracks.Count} songs.");
             }
             else
             {
                 var track = searchResponse.Tracks.FirstOrDefault();
-                player.Queue.Enqueue(track);
+                Player.Queue.Enqueue(track);
 
-                await ReplyAsync($"Enqueued {track?.Title}");
+                var art = await track.FetchArtworkAsync();
+                var embed = await _embedHandler.CreatePlayEmbed(track?.Title, track?.Author, track?.Url, art);
+                await ReplyAsync(message: "Queued:", embed: embed);
             }
 
-            if (player.PlayerState is PlayerState.Playing or PlayerState.Paused)
+            if (Player.PlayerState is PlayerState.Playing or PlayerState.Paused)
             {
                 return;
             }
 
-            player.Queue.TryDequeue(out var lavaTrack);
-            await player.PlayAsync(x =>
+            Player.Queue.TryDequeue(out var lavaTrack);
+            await Player.PlayAsync(x =>
             {
                 x.Track = lavaTrack;
                 x.ShouldPause = false;
@@ -162,8 +147,6 @@ namespace BrothermanBill.Modules
         [Command("PlayNow")]
         public async Task PlayNowAsync([Remainder] string searchQuery)
         {
-            var fullQuery = searchQuery;
-
             if (string.IsNullOrWhiteSpace(searchQuery))
             {
                 await ReplyAsync("Please provide search terms.");
@@ -175,23 +158,12 @@ namespace BrothermanBill.Modules
                 await JoinAsync();
             }
 
-            // is there a better way to do this pattern?
-            // do the yt search by default here
-            var isValidUrl = Uri.TryCreate(searchQuery, UriKind.Absolute, out var uri);
-
-            if (!isValidUrl)
-            {
-                fullQuery = "ytsearch: " + searchQuery;
-            }
-
-            var searchResponse = await _lavaNode.SearchAsync(SearchType.Direct, fullQuery);
+            var searchResponse = await LavaLinkSearch(searchQuery);
             if (searchResponse.Status is SearchStatus.LoadFailed or SearchStatus.NoMatches)
             {
                 await ReplyAsync($"I wasn't able to find anything for `{searchQuery}`.");
                 return;
             }
-
-            var player = _lavaNode.GetPlayer(Context.Guild);
 
             if (!string.IsNullOrWhiteSpace(searchResponse.Playlist.Name))
             {
@@ -202,33 +174,22 @@ namespace BrothermanBill.Modules
             {
                 var track = searchResponse.Tracks.FirstOrDefault();
                 await AddToFront(track);
-                var (oldTrack, currenTrack) = await player.SkipAsync();
-                await ReplyAsync($"Playing now:{track?.Title}");
+                var (oldTrack, currenTrack) = await Player.SkipAsync();
+                _logger.LogInformation($"Playing now:{track?.Title}");
             }
 
-            if (player.PlayerState is PlayerState.Playing or PlayerState.Paused)
+            if (Player.PlayerState is PlayerState.Playing or PlayerState.Paused)
             {
                 return;
             }
 
-            player.Queue.TryDequeue(out var lavaTrack);
-            await player.PlayAsync(x =>
+            Player.Queue.TryDequeue(out var lavaTrack);
+            await Player.PlayAsync(x =>
             {
                 x.Track = lavaTrack;
                 x.ShouldPause = false;
             });
         }
-
-        [Command("playtest")]
-        public async Task PlayWithoutQueue()
-        {
-            var player = _lavaNode.GetPlayer(Context.Guild);
-            var searchResponse = await _lavaNode.SearchAsync(SearchType.Direct, "ytsearch:christmas lo fi");
-            var track = searchResponse.Tracks.FirstOrDefault();
-
-            await player.PlayAsync(track);
-        }
-
 
         [Command("Pause")]
         public async Task PauseAsync()
@@ -274,7 +235,7 @@ namespace BrothermanBill.Modules
             try
             {
                 await player.ResumeAsync();
-                await ReplyAsync($"Resumed: {player.Track.Title}");
+                _logger.LogInformation($"Resumed: {player.Track.Title}");
             }
             catch (Exception exception)
             {
@@ -293,14 +254,14 @@ namespace BrothermanBill.Modules
 
             if (player.PlayerState == PlayerState.Stopped)
             {
-                await ReplyAsync("Woaaah there, I can't stop the stopped forced.");
+                _logger.LogInformation("Attempted stop on already stopped PlayerState");
                 return;
             }
 
             try
             {
                 await player.StopAsync();
-                await ReplyAsync("Queue finished.");
+                _logger.LogInformation("Queue finished.");
                 await _audioService.UpdateStatusWithTrackName(null);
             }
             catch (Exception exception)
@@ -333,8 +294,13 @@ namespace BrothermanBill.Modules
                 }
                 else
                 {
-                    var (oldTrack, currenTrack) = await player.SkipAsync();
-                    await ReplyAsync($"Skipped: {oldTrack.Title}\nNow Playing: {player.Track.Title}");
+                    var (oldTrack, currentTrack) = await player.SkipAsync();
+
+                    var art = await currentTrack.FetchArtworkAsync();
+                    var embed = await _embedHandler.CreatePlayEmbed(currentTrack?.Title, currentTrack?.Author, currentTrack?.Url, art);
+
+                    await ReplyAsync(message: "Now Playing:", embed: embed);
+                    _logger.LogInformation($"Skipped: {oldTrack.Title}\nNow Playing: {player.Track.Title}");
                 }
 
             }
@@ -360,15 +326,11 @@ namespace BrothermanBill.Modules
             }
 
             var track = player.Track;
-            var artwork = await track.FetchArtworkAsync();
+            var art = await track.FetchArtworkAsync();
+            var duration = CreateDurationString(track);
+            var embed = await _embedHandler.CreateNowPlayingEmbed(track?.Title, track?.Author, track?.Url, art, duration);
 
-            var embed = new EmbedBuilder()
-                .WithAuthor(track.Author, Context.Client.CurrentUser.GetAvatarUrl(), track.Url)
-                .WithTitle($"Now Playing: {track.Title}")
-                .WithImageUrl(artwork)
-                .WithFooter($"{track.Position}/{track.Duration}");
-
-            await ReplyAsync(embed: embed.Build());
+            await ReplyAsync(message: "Now playing:", embed: embed);
         }
 
         [Command("Queue")]
@@ -394,24 +356,68 @@ namespace BrothermanBill.Modules
         [Command("ClearQueue")]
         public async Task ClearQueue()
         {
-            var player = _lavaNode.GetPlayer(Context.Guild);
-            player.Queue.Clear();
-            await ReplyAsync("Queue cleared");
+            Player.Queue.Clear();
+            await ReplyAsync("Queue cleared.");
         }
 
-        public Task AddToFront(LavaTrack track)
+        private async Task<SearchResponse> LavaLinkSearch(string searchQuery)
         {
-            var player = _lavaNode.GetPlayer(Context.Guild);
-            var currentTrack = player.Track;
-            var trackList = player.Queue.ToList();
+            var fullQuery = searchQuery;
+            var isValidUrl = Uri.TryCreate(searchQuery, UriKind.Absolute, out var uri);
+
+            if (!isValidUrl)
+            {
+                fullQuery = "ytsearch: " + searchQuery;
+            }
+
+            var searchResponse = await _lavaNode.SearchAsync(SearchType.Direct, fullQuery);
+            return searchResponse;
+        }
+
+        private Task AddToFront(IEnumerable<LavaTrack> tracks)
+        {
+            var currentTrack = Player.Track;
+            var trackList = Player.Queue.ToList();
+
+            trackList = trackList.Prepend(currentTrack).ToList();
+
+            trackList.InsertRange(0, tracks);
+
+            Player.Queue.Clear();
+            Player.Queue.Enqueue(trackList);
+
+            return Task.CompletedTask;
+        }
+
+        private Task AddToFront(LavaTrack track)
+        {
+            var currentTrack = Player.Track;
+            var trackList = Player.Queue.ToList();
 
             trackList = trackList.Prepend(currentTrack).ToList();
             trackList = trackList.Prepend(track).ToList();
 
-            player.Queue.Clear();
-            player.Queue.Enqueue(trackList);
+            Player.Queue.Clear();
+            Player.Queue.Enqueue(trackList);
 
             return Task.CompletedTask;
+        }
+
+        private string CreateDurationString(LavaTrack track)
+        {
+            // https://docs.microsoft.com/en-us/dotnet/standard/base-types/custom-timespan-format-strings
+            // The reason there is a slash is because they're string literals to the formatter
+            var durationString = "";
+            var durationStringFormat = @"mm\:ss"; 
+
+            if (track.Duration.TotalHours >= 1)
+            {
+                durationStringFormat = @"hh\:mm\:ss";              
+            }
+
+            durationString = $"{track.Position.ToString(durationStringFormat)}/{track.Duration.ToString(durationStringFormat)}";
+
+            return durationString;
         }
     }
 }

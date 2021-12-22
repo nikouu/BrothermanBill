@@ -11,8 +11,6 @@ namespace BrothermanBill.Services
     public sealed class AudioService
     {
         private readonly LavaNode _lavaNode;
-        //private readonly ILogger _logger;
-        public readonly HashSet<ulong> VoteQueue;
         private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens;
         private readonly DiscordSocketClient _socketClient;
         private readonly ILogger _logger;
@@ -24,7 +22,8 @@ namespace BrothermanBill.Services
             _logger = logger;
             _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
 
-            _lavaNode.OnLog += arg => {
+            _lavaNode.OnLog += arg =>
+            {
                 _logger.LogInformation(arg.Message);
                 return Task.CompletedTask;
             };
@@ -58,7 +57,8 @@ namespace BrothermanBill.Services
 
         private async Task OnTrackStarted(TrackStartEventArgs arg)
         {
-            await arg.Player.TextChannel.SendMessageAsync($"Now playing: {arg.Track.Title}");
+            //await arg.Player.TextChannel.SendMessageAsync($"Now playing: {arg.Track.Title}");
+            _logger.LogInformation($"Now playing: {arg.Track.Title}");
             await UpdateStatusWithTrackName(arg.Track.Title);
             if (!_disconnectTokens.TryGetValue(arg.Player.VoiceChannel.Id, out var value))
             {
@@ -86,8 +86,9 @@ namespace BrothermanBill.Services
             var player = args.Player;
             if (!player.Queue.TryDequeue(out var lavaTrack))
             {
-                
-                await player.TextChannel.SendMessageAsync("Queue completed.");
+
+                //await player.TextChannel.SendMessageAsync("Queue completed.");
+                _logger.LogInformation("Queue completed.");
                 //_ = InitiateDisconnectAsync(args.Player, TimeSpan.FromMinutes(10));
                 return;
             }
@@ -103,7 +104,7 @@ namespace BrothermanBill.Services
                 x.Track = lavaTrack;
                 x.StartTime = lavaTrack.Position;
             });
-            await args.Player.TextChannel.SendMessageAsync($"{args.Reason}: {args.Track.Title}\nNow playing: {lavaTrack.Title}");
+            //await args.Player.TextChannel.SendMessageAsync($"{args.Reason}: {args.Track.Title}\nNow playing: {lavaTrack.Title}");
         }
 
         private async Task InitiateDisconnectAsync(LavaPlayer player, TimeSpan timeSpan)
@@ -119,7 +120,7 @@ namespace BrothermanBill.Services
                 value = _disconnectTokens[player.VoiceChannel.Id];
             }
 
-           // await player.TextChannel.SendMessageAsync($"Auto disconnect initiated! Disconnecting in {timeSpan}...");
+            // await player.TextChannel.SendMessageAsync($"Auto disconnect initiated! Disconnecting in {timeSpan}...");
             var isCancelled = SpinWait.SpinUntil(() => value.IsCancellationRequested, timeSpan);
             if (isCancelled)
             {
@@ -128,8 +129,6 @@ namespace BrothermanBill.Services
 
             await UpdateStatusWithTrackName(null);
             await _lavaNode.LeaveAsync(player.VoiceChannel);
-            //await player.TextChannel.SendMessageAsync("Invite me again sometime, sugar.");
-
         }
 
         private async Task OnTrackException(TrackExceptionEventArgs arg)
@@ -152,7 +151,5 @@ namespace BrothermanBill.Services
             _logger.LogCritical($"Discord WebSocket connection closed with following reason: {arg.Reason}");
             return Task.CompletedTask;
         }
-
-
     }
 }
