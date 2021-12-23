@@ -1,2 +1,2 @@
 # BrothermanBill
-Meme discord bot for my friends and I.
+Discord bot for music and memes.
