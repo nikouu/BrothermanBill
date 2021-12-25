@@ -181,8 +181,13 @@ namespace BrothermanBill.Modules
                 {
                     var (oldTrack, currentTrack) = await Player.SkipAsync();
                 }
-                
+
                 _logger.LogInformation($"Playing now:{track?.Title}");
+            }
+
+            if (Player.PlayerState is PlayerState.Playing or PlayerState.Paused)
+            {
+                return;
             }
 
             Player.Queue.TryDequeue(out var lavaTrack);
@@ -366,9 +371,9 @@ namespace BrothermanBill.Modules
         [Command("Meme"), Alias("m")]
         public async Task RandomMeme([Remainder] string meme = "")
         {
-            var url = string.IsNullOrWhiteSpace(meme) 
-                ? await _memeService.GetRandomMeme() 
-                : await _memeService.GetMeme(meme);        
+            var url = string.IsNullOrWhiteSpace(meme)
+                ? await _memeService.GetRandomMeme()
+                : await _memeService.GetMeme(meme);
 
             if (!string.IsNullOrWhiteSpace(url))
             {
@@ -377,7 +382,7 @@ namespace BrothermanBill.Modules
             }
 
             _logger.LogInformation($"No meme sound clip for {meme}.");
-            return;            
+            return;
         }
 
         private async Task<SearchResponse> LavaLinkSearch(string searchQuery)
@@ -428,11 +433,11 @@ namespace BrothermanBill.Modules
             // https://docs.microsoft.com/en-us/dotnet/standard/base-types/custom-timespan-format-strings
             // The reason there is a slash is because they're string literals to the formatter
             var durationString = "";
-            var durationStringFormat = @"mm\:ss"; 
+            var durationStringFormat = @"mm\:ss";
 
             if (track.Duration.TotalHours >= 1)
             {
-                durationStringFormat = @"hh\:mm\:ss";              
+                durationStringFormat = @"hh\:mm\:ss";
             }
 
             durationString = $"{track.Position.ToString(durationStringFormat)}/{track.Duration.ToString(durationStringFormat)}";
