@@ -24,13 +24,15 @@ namespace BrothermanBill.Modules
         private readonly AudioService _audioService;
         private readonly EmbedHandler _embedHandler;
         private readonly ILogger _logger;
+        private readonly MemeService _memeService;
 
         private LavaPlayer Player => _lavaNode.GetPlayer(Context.Guild);
 
-        public AudioModule(LavaNode lavaNode, AudioService audioService, EmbedHandler embedHandler, ILogger<AudioModule> logger)
+        public AudioModule(LavaNode lavaNode, AudioService audioService, MemeService memeService, EmbedHandler embedHandler, ILogger<AudioModule> logger)
         {
             _lavaNode = lavaNode;
             _audioService = audioService;
+            _memeService = memeService;
             _embedHandler = embedHandler;
             _logger = logger;
         }
@@ -174,13 +176,13 @@ namespace BrothermanBill.Modules
             {
                 var track = searchResponse.Tracks.FirstOrDefault();
                 await AddToFront(track);
-                var (oldTrack, currenTrack) = await Player.SkipAsync();
-                _logger.LogInformation($"Playing now:{track?.Title}");
-            }
 
-            if (Player.PlayerState is PlayerState.Playing or PlayerState.Paused)
-            {
-                return;
+                if (Player.PlayerState is PlayerState.Playing)
+                {
+                    var (oldTrack, currentTrack) = await Player.SkipAsync();
+                }
+                
+                _logger.LogInformation($"Playing now:{track?.Title}");
             }
 
             Player.Queue.TryDequeue(out var lavaTrack);
@@ -294,6 +296,7 @@ namespace BrothermanBill.Modules
                 }
                 else
                 {
+                    // fix bug when something is playing, like a meme then skipping fails
                     var (oldTrack, currentTrack) = await player.SkipAsync();
 
                     var art = await currentTrack.FetchArtworkAsync();
@@ -325,7 +328,7 @@ namespace BrothermanBill.Modules
                 return;
             }
 
-            var track = player.Track;
+            var track = Player.Track;
             var art = await track.FetchArtworkAsync();
             var duration = CreateDurationString(track);
             var embed = await _embedHandler.CreateNowPlayingEmbed(track?.Title, track?.Author, track?.Url, art, duration);
@@ -358,6 +361,23 @@ namespace BrothermanBill.Modules
         {
             Player.Queue.Clear();
             await ReplyAsync("Queue cleared.");
+        }
+
+        [Command("Meme"), Alias("m")]
+        public async Task RandomMeme([Remainder] string meme = "")
+        {
+            var url = string.IsNullOrWhiteSpace(meme) 
+                ? await _memeService.GetRandomMeme() 
+                : await _memeService.GetMeme(meme);        
+
+            if (!string.IsNullOrWhiteSpace(url))
+            {
+                await PlayNowAsync(url);
+                return;
+            }
+
+            _logger.LogInformation($"No meme sound clip for {meme}.");
+            return;            
         }
 
         private async Task<SearchResponse> LavaLinkSearch(string searchQuery)

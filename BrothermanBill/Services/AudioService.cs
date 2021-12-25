@@ -45,7 +45,7 @@ namespace BrothermanBill.Services
 
         private Task OnPlayerUpdated(PlayerUpdateEventArgs arg)
         {
-            _logger.LogInformation($"Track update received for {arg.Track?.Title}: {arg.Position}");
+            //_logger.LogInformation($"Track update received for {arg.Track?.Title}: {arg.Position}");
             return Task.CompletedTask;
         }
 

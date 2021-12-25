@@ -11,12 +11,10 @@ namespace BrothermanBill.Services
 {
     public class MemeService
     {
-        private readonly LavaNode _lavaNode;
         private readonly string _memeUrl;
 
-        public MemeService(LavaNode lavaNode)
+        public MemeService()
         {
-            _lavaNode = lavaNode;
             _memeUrl = "https://www.myinstants.com/api/v1/instants/";
         }
 
@@ -29,6 +27,22 @@ namespace BrothermanBill.Services
             var randomIndex = random.Next(memeList.Count());
 
             return memeList[randomIndex].Sound;
+        }
+
+        public async Task<string> GetMeme(string query)
+        {
+            var random = new Random();
+            var memeList = await SearchMemes(query);
+
+            if (memeList.Count() == 0)
+            {
+                return String.Empty;
+            }
+            else
+            {
+                //var randomIndex = random.Next(2);
+                return memeList?[0]?.Sound;
+            }
         }
 
         private async Task<MyInstantsQueryResult[]> SearchMemes(string query, int page = 1)
@@ -45,7 +59,7 @@ namespace BrothermanBill.Services
             if (response.IsSuccessStatusCode)
             {
                 var data = await response.Content.ReadAsStringAsync();
-                var queryResult = JsonSerializer.Deserialize<MyInstantsQueryRoot>(data);
+                var queryResult = JsonSerializer.Deserialize<MyInstantsQueryRoot>(data, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                 return queryResult.Results;
             }
             else
