@@ -84,6 +84,8 @@ namespace BrothermanBill.Modules
             try
             {
                 await _lavaNode.LeaveAsync(voiceChannel);
+                await ReplyAsync(":(");
+
             }
             catch (Exception exception)
             {
@@ -142,7 +144,6 @@ namespace BrothermanBill.Modules
             await Player.PlayAsync(x =>
             {
                 x.Track = lavaTrack;
-                x.ShouldPause = false;
             });
         }
 
@@ -176,6 +177,9 @@ namespace BrothermanBill.Modules
             {
                 var track = searchResponse.Tracks.FirstOrDefault();
                 await AddToFront(track);
+
+                var art = await track.FetchArtworkAsync();
+                var embed = await _embedHandler.CreatePlayEmbed(track?.Title, track?.Author, track?.Url, art);
 
                 if (Player.PlayerState is PlayerState.Playing)
                 {
@@ -329,13 +333,13 @@ namespace BrothermanBill.Modules
 
             if (player.PlayerState != PlayerState.Playing)
             {
-                await ReplyAsync("Woaaah there, I'm not playing any tracks.");
+                await ReplyAsync("Playing nothing.");
                 return;
             }
 
             var track = Player.Track;
             var art = await track.FetchArtworkAsync();
-            var duration = CreateDurationString(track);
+            var duration = track.IsStream ? "" : CreateDurationString(track);
             var embed = await _embedHandler.CreateNowPlayingEmbed(track?.Title, track?.Author, track?.Url, art, duration);
 
             await ReplyAsync(message: "Now playing:", embed: embed);
@@ -368,7 +372,8 @@ namespace BrothermanBill.Modules
             await ReplyAsync("Queue cleared.");
         }
 
-        [Command("Meme"), Alias("m")]
+        [Command("Meme")]
+        [Alias("m", "meem", "mmee", "emme")]
         public async Task RandomMeme([Remainder] string meme = "")
         {
             var url = string.IsNullOrWhiteSpace(meme)
@@ -397,21 +402,6 @@ namespace BrothermanBill.Modules
 
             var searchResponse = await _lavaNode.SearchAsync(SearchType.Direct, fullQuery);
             return searchResponse;
-        }
-
-        private Task AddToFront(IEnumerable<LavaTrack> tracks)
-        {
-            var currentTrack = Player.Track;
-            var trackList = Player.Queue.ToList();
-
-            trackList = trackList.Prepend(currentTrack).ToList();
-
-            trackList.InsertRange(0, tracks);
-
-            Player.Queue.Clear();
-            Player.Queue.Enqueue(trackList);
-
-            return Task.CompletedTask;
         }
 
         private Task AddToFront(LavaTrack track)
