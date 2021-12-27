@@ -110,7 +110,7 @@ namespace BrothermanBill.Services
             {
                 //await Log(LogSeverity.Debug, $"Starting playback of {path} in {guild.Name}");
                 using (var ffmpeg = CreateProcess(path))
-                using (var stream = client.CreatePCMStream(AudioApplication.Music))
+                await using (var stream = client.CreatePCMStream(AudioApplication.Music))
                 {
                     try { await ffmpeg.StandardOutput.BaseStream.CopyToAsync(stream); }
                     finally { await stream.FlushAsync(); }

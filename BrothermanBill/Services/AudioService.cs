@@ -24,6 +24,10 @@ namespace BrothermanBill.Services
 
             _lavaNode.OnLog += arg =>
             {
+                if (arg.Message.Contains("playerUpdate"))
+                {
+                    return Task.CompletedTask;
+                }
                 _logger.LogInformation(arg.Message);
                 return Task.CompletedTask;
             };
