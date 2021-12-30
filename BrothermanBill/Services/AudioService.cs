@@ -24,6 +24,7 @@ namespace BrothermanBill.Services
 
             _lavaNode.OnLog += arg =>
             {
+                // todo: tidy
                 if (arg.Message.Contains("playerUpdate"))
                 {
                     return Task.CompletedTask;

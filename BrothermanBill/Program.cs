@@ -76,9 +76,20 @@ commands.Log += (LogMessage msg) =>
     logger.LogInformation(msg.ToString());
     return Task.CompletedTask;
 };
-//var discord = new DiscordWrapper();
-//await discord.Run();
 
+socketClient.UserVoiceStateUpdated += async (user, before, after) =>
+{
+    if (after.VoiceChannel is null)
+    {
+        var currentUser = socketClient.CurrentUser.Username;
+        var hasOtherUsers = before.VoiceChannel.Users.Where(x => x.Username != currentUser).Any();
+        if (!hasOtherUsers)
+        {
+            logger.LogInformation($"Leaving {after.VoiceChannel} as the last user, {user.Username}, has left.");
+            await socketClient.StopAsync();
+        }
+    }
+};
 
 await socketClient.LoginAsync(TokenType.Bot, config["DiscordBotToken"]);
 await socketClient.StartAsync();
