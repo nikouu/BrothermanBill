@@ -409,7 +409,11 @@ namespace BrothermanBill.Modules
             var currentTrack = Player.Track;
             var trackList = Player.Queue.ToList();
 
-            trackList = trackList.Prepend(currentTrack).ToList();
+            if (currentTrack is not null)
+            {
+                trackList = trackList.Prepend(currentTrack).ToList();
+            }
+
             trackList = trackList.Prepend(track).ToList();
 
             Player.Queue.Clear();
