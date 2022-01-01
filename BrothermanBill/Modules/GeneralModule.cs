@@ -41,5 +41,14 @@ namespace BrothermanBill.Modules
 
         [Command("cum")]
         public Task CumAsync() => ReplyAsync("Cum");
+
+        [Command("Pick")]
+        public async Task Pick([Remainder] string gameList)
+        {
+            var games = gameList.Split(" ");
+            var random = new Random();
+            var game = games[random.Next(games.Length)];
+            await ReplyAsync(game);
+        }
     }
 }
