@@ -94,6 +94,7 @@ namespace BrothermanBill.Services
 
                 //await player.TextChannel.SendMessageAsync("Queue completed.");
                 _logger.LogInformation("Queue completed.");
+                await _socketClient.SetActivityAsync(new Game(null));
                 //_ = InitiateDisconnectAsync(args.Player, TimeSpan.FromMinutes(10));
                 return;
             }
