@@ -187,6 +187,7 @@ namespace BrothermanBill.Modules
                 }
 
                 _logger.LogInformation($"Playing now:{track?.Title}");
+                await ReplyAsync(message: "Playing now:", embed: embed);
             }
 
             if (Player.PlayerState is PlayerState.Playing or PlayerState.Paused)

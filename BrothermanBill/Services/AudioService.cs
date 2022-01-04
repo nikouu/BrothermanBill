@@ -113,30 +113,6 @@ namespace BrothermanBill.Services
             //await args.Player.TextChannel.SendMessageAsync($"{args.Reason}: {args.Track.Title}\nNow playing: {lavaTrack.Title}");
         }
 
-        private async Task InitiateDisconnectAsync(LavaPlayer player, TimeSpan timeSpan)
-        {
-            if (!_disconnectTokens.TryGetValue(player.VoiceChannel.Id, out var value))
-            {
-                value = new CancellationTokenSource();
-                _disconnectTokens.TryAdd(player.VoiceChannel.Id, value);
-            }
-            else if (value.IsCancellationRequested)
-            {
-                _disconnectTokens.TryUpdate(player.VoiceChannel.Id, new CancellationTokenSource(), value);
-                value = _disconnectTokens[player.VoiceChannel.Id];
-            }
-
-            // await player.TextChannel.SendMessageAsync($"Auto disconnect initiated! Disconnecting in {timeSpan}...");
-            var isCancelled = SpinWait.SpinUntil(() => value.IsCancellationRequested, timeSpan);
-            if (isCancelled)
-            {
-                return;
-            }
-
-            await UpdateStatusWithTrackName(null);
-            await _lavaNode.LeaveAsync(player.VoiceChannel);
-        }
-
         private async Task OnTrackException(TrackExceptionEventArgs arg)
         {
             _logger.LogError($"Track {arg.Track.Title} threw an exception. Please check Lavalink console/logs.");
