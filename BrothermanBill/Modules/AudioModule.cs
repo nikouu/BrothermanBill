@@ -1,12 +1,7 @@
 ﻿using BrothermanBill.Services;
 using Discord;
-using Discord.Audio;
-using Discord.Audio.Streams;
 using Discord.Commands;
-using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
-using System.Net;
 using Victoria;
 using Victoria.Enums;
 using Victoria.Responses.Search;

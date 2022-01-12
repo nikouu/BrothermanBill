@@ -1,17 +1,6 @@
-﻿using BrothermanBill.Services;
-using CliWrap;
+﻿using CliWrap;
 using Discord;
-using Discord.Audio;
-using Discord.Audio.Streams;
 using Discord.Commands;
-using Discord.WebSocket;
-using FFMpegCore;
-using FFMpegCore.Enums;
-using FFMpegCore.Pipes;
-using System.Buffers;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.IO.Pipelines;
 
 namespace BrothermanBill.Modules
 {
