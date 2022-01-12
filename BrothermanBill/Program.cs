@@ -6,19 +6,12 @@ using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Reflection;
 using Victoria;
 
-// run brothermanbill on a rasp pi pogu with a little logo and stuff on it, though no access to windows speech recognition
-// have it check github for new releases? 
-// have local server for logs
-
 await StartLavalinkAsync();
-
-
 
 // this could also be the new .net6 ConfigurationManager
 var config = new ConfigurationBuilder()
