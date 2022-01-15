@@ -142,6 +142,7 @@ namespace BrothermanBill.Modules
             });
         }
 
+        // todo: fix playnow and play, needs to be properly sorted out
         [Command("PlayNow")]
         public async Task PlayNowAsync([Remainder] string searchQuery)
         {
