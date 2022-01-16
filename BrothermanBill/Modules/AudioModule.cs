@@ -91,112 +91,115 @@ namespace BrothermanBill.Modules
         [Command("Play")]
         public async Task PlayAsync([Remainder] string searchQuery)
         {
-            if (string.IsNullOrWhiteSpace(searchQuery))
-            {
-                await ReplyAsync("Please provide search terms.");
-                return;
-            }
+            await HandlePlay(searchQuery, false);
+            //if (string.IsNullOrWhiteSpace(searchQuery))
+            //{
+            //    await ReplyAsync("Please provide search terms.");
+            //    return;
+            //}
 
-            if (!_lavaNode.HasPlayer(Context.Guild))
-            {
-                await JoinAsync();
-            }
+            //if (!_lavaNode.HasPlayer(Context.Guild))
+            //{
+            //    await JoinAsync();
+            //}
 
-            if (Player?.Track?.IsStream == true)
-            {
-                await PlayNowAsync(searchQuery);
-                return;
-            }
+            //if (Player?.Track?.IsStream == true)
+            //{
+            //    await PlayNowAsync(searchQuery);
+            //    return;
+            //}
 
-            var searchResponse = await LavaLinkSearch(searchQuery);
-            if (searchResponse.Status is SearchStatus.LoadFailed or SearchStatus.NoMatches)
-            {
-                //await ReplyAsync($"I wasn't able to find anything for `{searchQuery}`.");
-                return;
-            }
+            //var searchResponse = await LavaLinkSearch(searchQuery);
+            //if (searchResponse.Status is SearchStatus.LoadFailed or SearchStatus.NoMatches)
+            //{
+            //    //await ReplyAsync($"I wasn't able to find anything for `{searchQuery}`.");
+            //    return;
+            //}
 
-            if (!string.IsNullOrWhiteSpace(searchResponse.Playlist.Name))
-            {
-                Player.Queue.Enqueue(searchResponse.Tracks);
-                await ReplyAsync($"Enqueued {searchResponse.Tracks.Count} songs.");
-            }
-            else
-            {
-                var track = searchResponse.Tracks.FirstOrDefault();
-                Player.Queue.Enqueue(track);
+            //if (!string.IsNullOrWhiteSpace(searchResponse.Playlist.Name))
+            //{
+            //    Player.Queue.Enqueue(searchResponse.Tracks);
+            //    await ReplyAsync($"Enqueued {searchResponse.Tracks.Count} songs.");
+            //}
+            //else
+            //{
+            //    var track = searchResponse.Tracks.FirstOrDefault();
+            //    Player.Queue.Enqueue(track);
 
-                var art = await track.FetchArtworkAsync();
-                var embed = await _embedHandler.CreatePlayEmbed(track?.Title, track?.Author, track?.Url, art);
-                await ReplyAsync(message: "Queued:", embed: embed);
-            }
+            //    var art = await track.FetchArtworkAsync();
+            //    var embed = await _embedHandler.CreatePlayEmbed(track?.Title, track?.Author, track?.Url, art);
+            //    await ReplyAsync(message: "Queued:", embed: embed);
+            //}
 
-            if (Player.PlayerState is PlayerState.Playing or PlayerState.Paused)
-            {
-                return;
-            }
+            //if (Player.PlayerState is PlayerState.Playing or PlayerState.Paused)
+            //{
+            //    return;
+            //}
 
-            Player.Queue.TryDequeue(out var lavaTrack);
-            await Player.PlayAsync(x =>
-            {
-                x.Track = lavaTrack;
-            });
+            //Player.Queue.TryDequeue(out var lavaTrack);
+            //await Player.PlayAsync(x =>
+            //{
+            //    x.Track = lavaTrack;
+            //});
         }
 
         // todo: fix playnow and play, needs to be properly sorted out
         [Command("PlayNow")]
         public async Task PlayNowAsync([Remainder] string searchQuery)
         {
-            if (string.IsNullOrWhiteSpace(searchQuery))
-            {
-                await ReplyAsync("Please provide search terms.");
-                return;
-            }
+            await HandlePlay(searchQuery, true);
 
-            if (!_lavaNode.HasPlayer(Context.Guild))
-            {
-                await JoinAsync();
-            }
+            //if (string.IsNullOrWhiteSpace(searchQuery))
+            //{
+            //    await ReplyAsync("Please provide search terms.");
+            //    return;
+            //}
 
-            var searchResponse = await LavaLinkSearch(searchQuery);
-            if (searchResponse.Status is SearchStatus.LoadFailed or SearchStatus.NoMatches)
-            {
-                await ReplyAsync($"I wasn't able to find anything for `{searchQuery}`.");
-                return;
-            }
+            //if (!_lavaNode.HasPlayer(Context.Guild))
+            //{
+            //    await JoinAsync();
+            //}
 
-            if (!string.IsNullOrWhiteSpace(searchResponse.Playlist.Name))
-            {
-                await ReplyAsync($"Cannot Play Now a playlist");
-                return;
-            }
-            else
-            {
-                var track = searchResponse.Tracks.FirstOrDefault();
-                await AddToFront(track);
+            //var searchResponse = await LavaLinkSearch(searchQuery);
+            //if (searchResponse.Status is SearchStatus.LoadFailed or SearchStatus.NoMatches)
+            //{
+            //    await ReplyAsync($"I wasn't able to find anything for `{searchQuery}`.");
+            //    return;
+            //}
 
-                var art = await track.FetchArtworkAsync();
-                var embed = await _embedHandler.CreatePlayEmbed(track?.Title, track?.Author, track?.Url, art);
+            //if (!string.IsNullOrWhiteSpace(searchResponse.Playlist.Name))
+            //{
+            //    await ReplyAsync($"Cannot Play Now a playlist");
+            //    return;
+            //}
+            //else
+            //{
+            //    var track = searchResponse.Tracks.FirstOrDefault();
+            //    await AddToFront(track);
 
-                if (Player.PlayerState is PlayerState.Playing)
-                {
-                    var (oldTrack, currentTrack) = await Player.SkipAsync();
-                }
+            //    var art = await track.FetchArtworkAsync();
+            //    var embed = await _embedHandler.CreatePlayEmbed(track?.Title, track?.Author, track?.Url, art);
 
-                _logger.LogInformation($"Playing now:{track?.Title}");
-                await ReplyAsync(message: "Playing now:", embed: embed);
-            }
+            //    if (Player.PlayerState is PlayerState.Playing)
+            //    {
+            //        var (oldTrack, currentTrack) = await Player.SkipAsync();
+            //    }
 
-            if (Player.PlayerState is PlayerState.Playing or PlayerState.Paused)
-            {
-                return;
-            }
+            //    _logger.LogInformation($"Playing now:{track?.Title}");
+            //    await ReplyAsync(message: "Playing now:", embed: embed);
+            //}
 
-            Player.Queue.TryDequeue(out var lavaTrack);
-            await Player.PlayAsync(x =>
-            {
-                x.Track = lavaTrack;
-                x.ShouldPause = false;
-            });
+            //if (Player.PlayerState is PlayerState.Playing or PlayerState.Paused)
+            //{
+            //    return;
+            //}
+
+            //Player.Queue.TryDequeue(out var lavaTrack);
+            //await Player.PlayAsync(x =>
+            //{
+            //    x.Track = lavaTrack;
+            //    x.ShouldPause = false;
+            //});
         }
 
         [Command("Pause")]
@@ -434,6 +437,81 @@ namespace BrothermanBill.Modules
             durationString = $"{track.Position.ToString(durationStringFormat)}/{track.Duration.ToString(durationStringFormat)}";
 
             return durationString;
+        }
+
+        private async Task HandlePlay(string searchQuery, bool playImmediately)
+        {
+            if (string.IsNullOrWhiteSpace(searchQuery))
+            {
+                await ReplyAsync("Please provide search terms.");
+                return;
+            }
+
+            if (!_lavaNode.HasPlayer(Context.Guild))
+            {
+                await JoinAsync();
+            }
+
+            var searchResponse = await LavaLinkSearch(searchQuery);
+            if (searchResponse.Status is SearchStatus.LoadFailed or SearchStatus.NoMatches)
+            {
+                //await ReplyAsync($"I wasn't able to find anything for `{searchQuery}`.");
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(searchResponse.Playlist.Name))
+            {
+                Player.Queue.Enqueue(searchResponse.Tracks);
+                await ReplyAsync($"Enqueued {searchResponse.Tracks.Count} songs.");
+            }
+            else
+            {
+                var track = searchResponse.Tracks.FirstOrDefault();
+
+                if (Player?.Track?.IsStream == true || playImmediately)
+                {
+                    await PlayTrackImmediately(track);
+                }
+                else
+                {
+                    await EnqueueTrack(track);
+                }
+            }
+
+            if (Player.PlayerState is PlayerState.Playing or PlayerState.Paused)
+            {
+                return;
+            }
+
+            Player.Queue.TryDequeue(out var lavaTrack);
+            await Player.PlayAsync(x =>
+            {
+                x.Track = lavaTrack;
+            });
+        }
+
+        private async Task EnqueueTrack(LavaTrack track)
+        {
+            Player.Queue.Enqueue(track);
+
+            var art = await track.FetchArtworkAsync();
+            var embed = await _embedHandler.CreatePlayEmbed(track?.Title, track?.Author, track?.Url, art);
+            await ReplyAsync(message: "Queued:", embed: embed);
+        }
+
+        private async Task PlayTrackImmediately(LavaTrack track)
+        {
+            await AddToFront(track);
+            var art = await track.FetchArtworkAsync();
+            var embed = await _embedHandler.CreatePlayEmbed(track?.Title, track?.Author, track?.Url, art);
+
+            if (Player.PlayerState is PlayerState.Playing)
+            {
+                var (oldTrack, currentTrack) = await Player.SkipAsync();
+            }
+
+            _logger.LogInformation($"Playing now:{track?.Title}");
+            await ReplyAsync(message: "Playing now:", embed: embed);
         }
     }
 }
