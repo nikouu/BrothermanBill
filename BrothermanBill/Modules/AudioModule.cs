@@ -21,7 +21,8 @@ namespace BrothermanBill.Modules
         private readonly ILogger _logger;
         private readonly MemeService _memeService;
 
-        private LavaPlayer Player => _lavaNode.GetPlayer(Context.Guild);
+        private LavaPlayer Player 
+            => _lavaNode.GetPlayer(Context.Guild);
 
         public AudioModule(LavaNode lavaNode, AudioService audioService, MemeService memeService, EmbedHandler embedHandler, ILogger<AudioModule> logger)
         {
@@ -89,118 +90,13 @@ namespace BrothermanBill.Modules
         }
 
         [Command("Play")]
-        public async Task PlayAsync([Remainder] string searchQuery)
-        {
-            await HandlePlay(searchQuery, false);
-            //if (string.IsNullOrWhiteSpace(searchQuery))
-            //{
-            //    await ReplyAsync("Please provide search terms.");
-            //    return;
-            //}
-
-            //if (!_lavaNode.HasPlayer(Context.Guild))
-            //{
-            //    await JoinAsync();
-            //}
-
-            //if (Player?.Track?.IsStream == true)
-            //{
-            //    await PlayNowAsync(searchQuery);
-            //    return;
-            //}
-
-            //var searchResponse = await LavaLinkSearch(searchQuery);
-            //if (searchResponse.Status is SearchStatus.LoadFailed or SearchStatus.NoMatches)
-            //{
-            //    //await ReplyAsync($"I wasn't able to find anything for `{searchQuery}`.");
-            //    return;
-            //}
-
-            //if (!string.IsNullOrWhiteSpace(searchResponse.Playlist.Name))
-            //{
-            //    Player.Queue.Enqueue(searchResponse.Tracks);
-            //    await ReplyAsync($"Enqueued {searchResponse.Tracks.Count} songs.");
-            //}
-            //else
-            //{
-            //    var track = searchResponse.Tracks.FirstOrDefault();
-            //    Player.Queue.Enqueue(track);
-
-            //    var art = await track.FetchArtworkAsync();
-            //    var embed = await _embedHandler.CreatePlayEmbed(track?.Title, track?.Author, track?.Url, art);
-            //    await ReplyAsync(message: "Queued:", embed: embed);
-            //}
-
-            //if (Player.PlayerState is PlayerState.Playing or PlayerState.Paused)
-            //{
-            //    return;
-            //}
-
-            //Player.Queue.TryDequeue(out var lavaTrack);
-            //await Player.PlayAsync(x =>
-            //{
-            //    x.Track = lavaTrack;
-            //});
-        }
+        public async Task PlayAsync([Remainder] string searchQuery) 
+            => await HandlePlay(searchQuery, false);
 
         // todo: fix playnow and play, needs to be properly sorted out
         [Command("PlayNow")]
-        public async Task PlayNowAsync([Remainder] string searchQuery)
-        {
-            await HandlePlay(searchQuery, true);
-
-            //if (string.IsNullOrWhiteSpace(searchQuery))
-            //{
-            //    await ReplyAsync("Please provide search terms.");
-            //    return;
-            //}
-
-            //if (!_lavaNode.HasPlayer(Context.Guild))
-            //{
-            //    await JoinAsync();
-            //}
-
-            //var searchResponse = await LavaLinkSearch(searchQuery);
-            //if (searchResponse.Status is SearchStatus.LoadFailed or SearchStatus.NoMatches)
-            //{
-            //    await ReplyAsync($"I wasn't able to find anything for `{searchQuery}`.");
-            //    return;
-            //}
-
-            //if (!string.IsNullOrWhiteSpace(searchResponse.Playlist.Name))
-            //{
-            //    await ReplyAsync($"Cannot Play Now a playlist");
-            //    return;
-            //}
-            //else
-            //{
-            //    var track = searchResponse.Tracks.FirstOrDefault();
-            //    await AddToFront(track);
-
-            //    var art = await track.FetchArtworkAsync();
-            //    var embed = await _embedHandler.CreatePlayEmbed(track?.Title, track?.Author, track?.Url, art);
-
-            //    if (Player.PlayerState is PlayerState.Playing)
-            //    {
-            //        var (oldTrack, currentTrack) = await Player.SkipAsync();
-            //    }
-
-            //    _logger.LogInformation($"Playing now:{track?.Title}");
-            //    await ReplyAsync(message: "Playing now:", embed: embed);
-            //}
-
-            //if (Player.PlayerState is PlayerState.Playing or PlayerState.Paused)
-            //{
-            //    return;
-            //}
-
-            //Player.Queue.TryDequeue(out var lavaTrack);
-            //await Player.PlayAsync(x =>
-            //{
-            //    x.Track = lavaTrack;
-            //    x.ShouldPause = false;
-            //});
-        }
+        public async Task PlayNowAsync([Remainder] string searchQuery) 
+            => await HandlePlay(searchQuery, true);
 
         [Command("Pause")]
         public async Task PauseAsync()
@@ -507,7 +403,7 @@ namespace BrothermanBill.Modules
 
             if (Player.PlayerState is PlayerState.Playing)
             {
-                var (oldTrack, currentTrack) = await Player.SkipAsync();
+                await Player.SkipAsync();
             }
 
             _logger.LogInformation($"Playing now:{track?.Title}");
