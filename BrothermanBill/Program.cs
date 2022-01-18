@@ -29,7 +29,6 @@ await using var services = new ServiceCollection()
     .AddSingleton<DiscordSocketClient>()
     .AddSingleton<CommandService>()
     .AddSingleton<CommandHandlerService>()
-    .AddSingleton<PingService>()
     .AddSingleton<AudioService>()
     .AddSingleton<MemeService>()
     .AddSingleton<EmbedHandler>()
@@ -112,14 +111,10 @@ socketClient.Ready += async () =>
         roomId = newRoom.Id;
     }
 
-    var channel = socketClient.GetChannel(roomId) as IMessageChannel;
-    await channel.SendMessageAsync($"ping {services.GetRequiredService<CommandHandlerService>().InstanceId}");
-
     if (!lavaNode.IsConnected)
     {
         await lavaNode.ConnectAsync();
     }
-
 
     return;
 };

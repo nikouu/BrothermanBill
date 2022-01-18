@@ -13,19 +13,17 @@ namespace BrothermanBill
         private readonly DiscordSocketClient _client;
         private readonly CommandService _commands;
         private readonly IServiceProvider _services;
-        private readonly PingService _pingService;
         private readonly ILogger _logger;
         
         
 
         // Retrieve client and CommandService instance via ctor
-        public CommandHandlerService(DiscordSocketClient client, CommandService commands, IServiceProvider services, IOptions<InstanceId> options, PingService pingService, ILogger<CommandHandlerService> logger)
+        public CommandHandlerService(DiscordSocketClient client, CommandService commands, IServiceProvider services, IOptions<InstanceId> options, ILogger<CommandHandlerService> logger)
         {
             InstanceId = options.Value.Id;
             _commands = commands;
             _client = client;
             _services = services;
-            _pingService = pingService;
             _logger = logger;
             
         }
@@ -57,10 +55,6 @@ namespace BrothermanBill
             _logger.LogInformation($"Recieved Message: {message}");
             // Create a number to track where the prefix ends and the command begins
             int argPos = 0;
-
-            var shouldReturn = await _pingService.HandlePingAsync(messageParam, InstanceId);
-            
-            if (shouldReturn) return;
 
             // Determine if the message is a command based on the prefix and make sure no bots trigger commands
             // making sure the bot can call its own commands might be a mistake
