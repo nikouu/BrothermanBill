@@ -9,7 +9,6 @@ namespace BrothermanBill
 {
     public class CommandHandlerService
     {
-        public readonly Guid InstanceId;
         private readonly DiscordSocketClient _client;
         private readonly CommandService _commands;
         private readonly IServiceProvider _services;
@@ -18,9 +17,8 @@ namespace BrothermanBill
         
 
         // Retrieve client and CommandService instance via ctor
-        public CommandHandlerService(DiscordSocketClient client, CommandService commands, IServiceProvider services, IOptions<InstanceId> options, ILogger<CommandHandlerService> logger)
+        public CommandHandlerService(DiscordSocketClient client, CommandService commands, IServiceProvider services, ILogger<CommandHandlerService> logger)
         {
-            InstanceId = options.Value.Id;
             _commands = commands;
             _client = client;
             _services = services;
