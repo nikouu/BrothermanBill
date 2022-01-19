@@ -33,7 +33,6 @@ await using var services = new ServiceCollection()
     .AddSingleton<MemeService>()
     .AddSingleton<EmbedHandler>()
     .AddSingleton<SimpleAudioService>()
-    .Configure<InstanceId>(x => x.Id = Guid.NewGuid())
     .Configure<CommandServiceConfig>(x => new CommandServiceConfig
     {
         CaseSensitiveCommands = true,
@@ -54,8 +53,6 @@ var logger = loggerFactory.CreateLogger<Program>();
 await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
 
 await commandHandler.InstallCommandsAsync();
-
-logger.LogInformation($"Instance ID: {commandHandler.InstanceId}");
 
 socketClient.Log += (LogMessage msg) =>
 {
