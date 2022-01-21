@@ -33,7 +33,6 @@ namespace BrothermanBill.Services
                 return Task.CompletedTask;
             };
 
-            _lavaNode.OnPlayerUpdated += OnPlayerUpdated;
             _lavaNode.OnStatsReceived += OnStatsReceived;
             _lavaNode.OnTrackEnded += OnTrackEnded;
             _lavaNode.OnTrackStarted += OnTrackStarted;
@@ -48,12 +47,6 @@ namespace BrothermanBill.Services
             await _socketClient.SetActivityAsync(new Game(name));
         }
 
-        private Task OnPlayerUpdated(PlayerUpdateEventArgs arg)
-        {
-            //_logger.LogInformation($"Track update received for {arg.Track?.Title}: {arg.Position}");
-            return Task.CompletedTask;
-        }
-
         private Task OnStatsReceived(StatsEventArgs arg)
         {
             _logger.LogInformation($"Lavalink has been up for {arg.Uptime}.");
@@ -62,7 +55,6 @@ namespace BrothermanBill.Services
 
         private async Task OnTrackStarted(TrackStartEventArgs arg)
         {
-            //await arg.Player.TextChannel.SendMessageAsync($"Now playing: {arg.Track.Title}");
             _logger.LogInformation($"Now playing: {arg.Track.Title}");
             await UpdateStatusWithTrackName(arg.Track.Title);
             if (!_disconnectTokens.TryGetValue(arg.Player.VoiceChannel.Id, out var value))
@@ -91,11 +83,8 @@ namespace BrothermanBill.Services
             var player = args.Player;
             if (!player.Queue.TryDequeue(out var lavaTrack))
             {
-
-                //await player.TextChannel.SendMessageAsync("Queue completed.");
                 _logger.LogInformation("Queue completed.");
                 await _socketClient.SetActivityAsync(new Game(null));
-                //_ = InitiateDisconnectAsync(args.Player, TimeSpan.FromMinutes(10));
                 return;
             }
 
@@ -110,7 +99,6 @@ namespace BrothermanBill.Services
                 x.Track = lavaTrack;
                 x.StartTime = lavaTrack.Position;
             });
-            //await args.Player.TextChannel.SendMessageAsync($"{args.Reason}: {args.Track.Title}\nNow playing: {lavaTrack.Title}");
         }
 
         private async Task OnTrackException(TrackExceptionEventArgs arg)
