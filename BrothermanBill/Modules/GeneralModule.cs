@@ -32,9 +32,9 @@ namespace BrothermanBill.Modules
         public Task CumAsync() => ReplyAsync("Cum");
 
         [Command("Pick")]
-        public async Task Pick([Remainder] string gameList)
+        public async Task Pick([Remainder] string list)
         {
-            var games = gameList.Split(" ");
+            var games = list.Split(" ");
             var random = new Random();
             var game = games[random.Next(games.Length)];
             await ReplyAsync(game);
