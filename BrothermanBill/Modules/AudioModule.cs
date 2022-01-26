@@ -93,7 +93,6 @@ namespace BrothermanBill.Modules
         public async Task PlayAsync([Remainder] string searchQuery) 
             => await HandlePlay(searchQuery, false);
 
-        // todo: fix playnow and play, needs to be properly sorted out
         [Command("PlayNow")]
         public async Task PlayNowAsync([Remainder] string searchQuery) 
             => await HandlePlay(searchQuery, true);
@@ -109,7 +108,7 @@ namespace BrothermanBill.Modules
 
             if (player.PlayerState != PlayerState.Playing)
             {
-                await ReplyAsync("I cannot pause when I'm not playing anything!");
+                _logger.LogInformation("I cannot pause when I'm not playing anything!");
                 return;
             }
 
@@ -188,7 +187,6 @@ namespace BrothermanBill.Modules
 
             if (player.PlayerState != PlayerState.Playing)
             {
-                await ReplyAsync("Woaaah there, I can't skip when nothing is playing.");
                 return;
             }
 
