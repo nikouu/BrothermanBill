@@ -349,7 +349,7 @@ namespace BrothermanBill.Modules
             var searchResponse = await LavaLinkSearch(searchQuery);
             if (searchResponse.Status is SearchStatus.LoadFailed or SearchStatus.NoMatches)
             {
-                //await ReplyAsync($"I wasn't able to find anything for `{searchQuery}`.");
+                _logger.LogInformation($"I wasn't able to find anything for `{searchQuery}`.");
                 return;
             }
 
