@@ -26,10 +26,10 @@ namespace BrothermanBill.Modules
 
         [Command("kkona")]
         [Summary("Echoes a message.")]
-        public Task KkonaAsync() => ReplyAsync("KKona brother <:Kkona:917645359633813545>");
+        public async Task KkonaAsync() => await ReplyAsync("KKona brother <:Kkona:917645359633813545>");
 
         [Command("cum")]
-        public Task CumAsync() => ReplyAsync("Cum");
+        public async Task CumAsync() => await ReplyAsync("Cum");
 
         [Command("Pick")]
         public async Task Pick([Remainder] string list)
