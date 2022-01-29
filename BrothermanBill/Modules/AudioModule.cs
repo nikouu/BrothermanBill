@@ -295,6 +295,8 @@ namespace BrothermanBill.Modules
             }
 
             var searchResponse = await _lavaNode.SearchAsync(SearchType.Direct, fullQuery);
+
+            // set position of track on the track object
             return searchResponse;
         }
 
