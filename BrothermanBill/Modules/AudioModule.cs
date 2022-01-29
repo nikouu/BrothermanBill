@@ -2,6 +2,7 @@
 using Discord;
 using Discord.Commands;
 using Microsoft.Extensions.Logging;
+using System.Web;
 using Victoria;
 using Victoria.Enums;
 using Victoria.Responses.Search;
@@ -348,7 +349,8 @@ namespace BrothermanBill.Modules
                 await JoinAsync();
             }
 
-            var searchResponse = await LavaLinkSearch(searchQuery);
+            var seekTime = GetUrlParameterTime(searchQuery);
+            var searchResponse = await LavaLinkSearch(searchQuery);            
             if (searchResponse.Status is SearchStatus.LoadFailed or SearchStatus.NoMatches)
             {
                 _logger.LogInformation($"I wasn't able to find anything for `{searchQuery}`.");
@@ -363,6 +365,11 @@ namespace BrothermanBill.Modules
             else
             {
                 var track = searchResponse.Tracks.FirstOrDefault();
+                
+                if (seekTime != TimeSpan.Zero)
+                {
+                    track = new LavaTrack(track.Hash, track.Id, track.Title, track.Author, track.Url, seekTime, (long)track.Duration.TotalMilliseconds, track.CanSeek, track.IsStream, track.Source);
+                }
 
                 if (Player?.Track?.IsStream == true || playImmediately)
                 {
@@ -383,6 +390,7 @@ namespace BrothermanBill.Modules
             await Player.PlayAsync(x =>
             {
                 x.Track = lavaTrack;
+                x.StartTime = seekTime;
             });
         }
 
@@ -408,6 +416,26 @@ namespace BrothermanBill.Modules
 
             _logger.LogInformation($"Playing now:{track?.Title}");
             await ReplyAsync(message: "Playing now:", embed: embed);
+        }
+
+        private TimeSpan GetUrlParameterTime(string searchQuery)
+        {
+            var isValidUrl = Uri.TryCreate(searchQuery, UriKind.Absolute, out var uri);
+
+            if (!isValidUrl)
+            {
+                return new TimeSpan(0, 0, 0);
+            }
+
+            if (!uri.Query.Contains("t")){
+                return new TimeSpan(0, 0, 0);
+            }
+
+            var queryString = HttpUtility.ParseQueryString(uri.Query);
+            var seconds = int.Parse(queryString.Get("t"));
+
+            var timeSpan = TimeSpan.FromSeconds(seconds);
+            return timeSpan;
         }
     }
 }
