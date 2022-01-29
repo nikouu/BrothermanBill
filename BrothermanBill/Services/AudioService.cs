@@ -73,6 +73,14 @@ namespace BrothermanBill.Services
 
         private async Task OnTrackEnded(TrackEndedEventArgs args)
         {
+            // workaround as in LavaPlayer.PlayAsync():L158 it doesn't pass the info on when to start the track from
+            if (args.Reason == TrackEndReason.Replaced)
+            {
+                var p = args.Player;
+                await p.SeekAsync(args.Player.Track.Position);
+                return;
+            }
+
             if (args.Reason != TrackEndReason.Finished)
             {
                 return;
