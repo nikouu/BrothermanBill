@@ -135,7 +135,7 @@ namespace BrothermanBill.Modules
 
             if (player.PlayerState != PlayerState.Paused)
             {
-                await ReplyAsync("I cannot resume when I'm not playing anything!");
+                _logger.LogInformation("I cannot resume when I'm not playing anything!");
                 return;
             }
 
@@ -146,7 +146,7 @@ namespace BrothermanBill.Modules
             }
             catch (Exception exception)
             {
-                await ReplyAsync(exception.Message);
+                _logger.LogError(exception.Message);
             }
         }
 
@@ -168,6 +168,7 @@ namespace BrothermanBill.Modules
             try
             {
                 await player.StopAsync();
+                await ClearQueue();
                 _logger.LogInformation("Queue finished.");
                 await _audioService.UpdateStatusWithTrackName(null);
             }
@@ -405,14 +406,19 @@ namespace BrothermanBill.Modules
 
         private async Task PlayTrackImmediately(LavaTrack track)
         {
+            if (Player.PlayerState is PlayerState.Paused)
+            {
+                await ResumeAsync();
+            }
+
             await AddToFront(track);
             var art = await track.FetchArtworkAsync();
-            var embed = await _embedHandler.CreatePlayEmbed(track?.Title, track?.Author, track?.Url, art);
+            var embed = await _embedHandler.CreatePlayEmbed(track?.Title, track?.Author, track?.Url, art);            
 
             if (Player.PlayerState is PlayerState.Playing)
             {
                 await Player.SkipAsync();
-            }
+            }           
 
             _logger.LogInformation($"Playing now:{track?.Title}");
             await ReplyAsync(message: "Playing now:", embed: embed);
