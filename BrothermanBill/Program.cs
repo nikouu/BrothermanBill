@@ -32,7 +32,6 @@ await using var services = new ServiceCollection()
     .AddSingleton<AudioService>()
     .AddSingleton<MemeService>()
     .AddSingleton<EmbedHandler>()
-    .AddSingleton<SimpleAudioService>()
     .Configure<CommandServiceConfig>(x => new CommandServiceConfig
     {
         CaseSensitiveCommands = true,
