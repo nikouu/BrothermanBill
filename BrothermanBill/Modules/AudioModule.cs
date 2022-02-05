@@ -98,6 +98,13 @@ namespace BrothermanBill.Modules
         public async Task PlayNowAsync([Remainder] string searchQuery) 
             => await HandlePlay(searchQuery, true);
 
+        // todo: add an embed of the next track coming up
+
+        [Command("MoveToBack")]
+        public async Task MoveToBack()
+            => await MoveTrackToBack();
+
+
         [Command("Pause")]
         public async Task PauseAsync()
         {
@@ -241,6 +248,7 @@ namespace BrothermanBill.Modules
             await ReplyAsync(message: "Now playing:", embed: embed);
         }
 
+        // add a thing for the currently playing song
         [Command("Queue")]
         public async Task QueueAsync()
         {
@@ -316,6 +324,24 @@ namespace BrothermanBill.Modules
 
             Player.Queue.Clear();
             Player.Queue.Enqueue(trackList);
+
+            return Task.CompletedTask;
+        }
+
+        private Task MoveTrackToBack()
+        {
+            var currentTrack = Player.Track;
+            var trackList = Player.Queue.ToList();
+
+            if (currentTrack is not null)
+            {
+                trackList = trackList.Append(currentTrack).ToList();
+            }
+
+            Player.Queue.Clear();
+            Player.Queue.Enqueue(trackList);
+
+            Player.SkipAsync();
 
             return Task.CompletedTask;
         }
@@ -433,7 +459,8 @@ namespace BrothermanBill.Modules
                 return new TimeSpan(0, 0, 0);
             }
 
-            if (!uri.Query.Contains("t")){
+            // todo: check if the queryparameter key contains t, not just if any of the string contains t
+            if (!uri.Query.Contains("&t=")){
                 return new TimeSpan(0, 0, 0);
             }
 
