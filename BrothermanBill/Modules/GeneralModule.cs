@@ -8,10 +8,12 @@ namespace BrothermanBill.Modules
     public class GeneralModule : ModuleBase<SocketCommandContext>
     {
         private readonly StatusService _statusService;
+        private readonly UptimeService _uptimeService;
 
-        public GeneralModule(StatusService statusService)
+        public GeneralModule(StatusService statusService, UptimeService uptimeService)
         {
             _statusService = statusService;
+            _uptimeService = uptimeService;
         }
 
         [Command("ping")]
@@ -47,5 +49,9 @@ namespace BrothermanBill.Modules
             var game = games[random.Next(games.Length)];
             await ReplyAsync(game);
         }
+
+        [Command("UpTime")]
+        public async Task UpTime()
+            => await ReplyAsync($"Uptime: {_uptimeService.UpTime:dd\\.hh\\:mm\\:ss}");
     }
 }
