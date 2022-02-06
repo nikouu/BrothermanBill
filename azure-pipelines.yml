@@ -38,6 +38,7 @@ steps:
     Contents: '**/BrothermanBill/bin/Release/net6.0/*'
     TargetFolder: '$(build.artifactstagingdirectory)'
     CleanTargetFolder: true
+    flattenFolders: true
 
 - task: PublishBuildArtifacts@1
   inputs:
