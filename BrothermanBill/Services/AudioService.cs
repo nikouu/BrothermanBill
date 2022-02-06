@@ -12,15 +12,15 @@ namespace BrothermanBill.Services
     {
         private readonly LavaNode _lavaNode;
         private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens;
-        private readonly DiscordSocketClient _socketClient;
         private readonly ILogger _logger;
+        private readonly StatusService _statusService;
 
-        public AudioService(LavaNode lavaNode, DiscordSocketClient socketClient, ILogger<AudioService> logger)
+        public AudioService(LavaNode lavaNode, ILogger<AudioService> logger, StatusService statusService)
         {
             _lavaNode = lavaNode;
-            _socketClient = socketClient;
             _logger = logger;
             _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
+            _statusService = statusService;
 
             _lavaNode.OnLog += arg =>
             {
@@ -29,6 +29,17 @@ namespace BrothermanBill.Services
                 {
                     return Task.CompletedTask;
                 }
+
+                if (arg.Message.Contains("Lavalink reconnect attempt"))
+                {
+                    _ = statusService.SetStatus("Attempting to connect to Lavalink");
+                }
+
+                if (arg.Message.Contains("Websocket connection established."))
+                {
+                    _ = statusService.SetStatus(null);
+                }
+
                 _logger.LogInformation(arg.Message);
                 return Task.CompletedTask;
             };
@@ -44,7 +55,7 @@ namespace BrothermanBill.Services
         public async Task UpdateStatusWithTrackName(string? name = null)
         {
             _logger.LogInformation($"Updated currently playing status to: {name}");
-            await _socketClient.SetActivityAsync(new Game(name));
+            await _statusService.SetStatus(name);
         }
 
         private Task OnStatsReceived(StatsEventArgs arg)
@@ -92,7 +103,7 @@ namespace BrothermanBill.Services
             if (!player.Queue.TryDequeue(out var lavaTrack))
             {
                 _logger.LogInformation("Queue completed.");
-                await _socketClient.SetActivityAsync(new Game(null));
+                await _statusService.SetStatus(null);
                 return;
             }
 
