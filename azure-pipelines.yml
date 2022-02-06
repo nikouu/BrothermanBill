@@ -35,7 +35,7 @@ steps:
 
 - task: CopyFiles@2
   inputs:
-    Contents: '$(Build.ArtifactStagingDirectory)/BrothermanBill/bin/Release/net6.0'
+    Contents: '**/BrothermanBill/bin/Release/net6.0'
     TargetFolder: '$(build.artifactstagingdirectory)'
     CleanTargetFolder: true
 
