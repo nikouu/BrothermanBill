@@ -35,6 +35,7 @@ await using var services = new ServiceCollection()
     .AddSingleton<MemeService>()
     .AddSingleton<EmbedHandler>()
     .AddSingleton<StatusService>()
+    .AddSingleton<UptimeService>()
     .Configure<CommandServiceConfig>(x => new CommandServiceConfig
     {
         CaseSensitiveCommands = true,
@@ -51,6 +52,7 @@ var lavaNode = services.GetRequiredService<LavaNode>();
 var loggerFactory = services.GetRequiredService<ILoggerFactory>();
 var logger = loggerFactory.CreateLogger<Program>();
 var statusService = services.GetRequiredService<StatusService>();
+var upTimeService = services.GetRequiredService<UptimeService>();
 
 await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
 
