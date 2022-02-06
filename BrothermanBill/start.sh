@@ -1,3 +1,3 @@
 ﻿#!/bin/bash
 
-nohup dotnet BrothermanBill.dll &
+nohup dotnet BrothermanBill.dll
