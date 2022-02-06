@@ -13,11 +13,13 @@ using Victoria;
 
 await StartLavalinkAsync();
 
+
+
 // this could also be the new .net6 ConfigurationManager
 var config = new ConfigurationBuilder()
              .SetBasePath(Directory.GetCurrentDirectory())
              .AddJsonFile("appsettings.json")
-             .AddUserSecrets<Program>()
+             .AddUserSecrets<Program>(optional: true) // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-6.0
              .Build();
 
 // https://dsharpplus.github.io/natives/index.html
@@ -41,7 +43,6 @@ await using var services = new ServiceCollection()
     .AddLavaNode(x => x.SelfDeaf = false)
     .AddLogging(builder => builder.AddConsole())
     .BuildServiceProvider();
-
 
 var commands = services.GetRequiredService<CommandService>();
 var socketClient = services.GetRequiredService<DiscordSocketClient>();
