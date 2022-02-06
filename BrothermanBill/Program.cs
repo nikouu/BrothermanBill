@@ -32,6 +32,7 @@ await using var services = new ServiceCollection()
     .AddSingleton<AudioService>()
     .AddSingleton<MemeService>()
     .AddSingleton<EmbedHandler>()
+    .AddSingleton<StatusService>()
     .Configure<CommandServiceConfig>(x => new CommandServiceConfig
     {
         CaseSensitiveCommands = true,
@@ -48,10 +49,13 @@ var commandHandler = services.GetRequiredService<CommandHandlerService>();
 var lavaNode = services.GetRequiredService<LavaNode>();
 var loggerFactory = services.GetRequiredService<ILoggerFactory>();
 var logger = loggerFactory.CreateLogger<Program>();
+var statusService = services.GetRequiredService<StatusService>();
 
 await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
 
 await commandHandler.InstallCommandsAsync();
+
+await statusService.SetStatus("Starting up");
 
 socketClient.Log += (LogMessage msg) =>
 {
@@ -109,6 +113,7 @@ socketClient.Ready += async () =>
 
     if (!lavaNode.IsConnected)
     {
+        await statusService.SetStatus("Waiting for LavaLink connection");
         await lavaNode.ConnectAsync();
     }
 

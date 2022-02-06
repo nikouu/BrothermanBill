@@ -21,17 +21,19 @@ namespace BrothermanBill.Modules
         private readonly EmbedHandler _embedHandler;
         private readonly ILogger _logger;
         private readonly MemeService _memeService;
+        private readonly StatusService _statusService;
 
         private LavaPlayer Player 
             => _lavaNode.GetPlayer(Context.Guild);
 
-        public AudioModule(LavaNode lavaNode, AudioService audioService, MemeService memeService, EmbedHandler embedHandler, ILogger<AudioModule> logger)
+        public AudioModule(LavaNode lavaNode, AudioService audioService, MemeService memeService, EmbedHandler embedHandler, ILogger<AudioModule> logger, StatusService statusService)
         {
             _lavaNode = lavaNode;
             _audioService = audioService;
             _memeService = memeService;
             _embedHandler = embedHandler;
             _logger = logger;
+            _statusService = statusService;
         }
 
         [Command("Join", RunMode = RunMode.Async)]
@@ -177,7 +179,7 @@ namespace BrothermanBill.Modules
                 await player.StopAsync();
                 await ClearQueue();
                 _logger.LogInformation("Queue finished.");
-                await _audioService.UpdateStatusWithTrackName(null);
+                await _statusService.SetStatus(null);
             }
             catch (Exception exception)
             {
@@ -211,11 +213,8 @@ namespace BrothermanBill.Modules
                     // fix bug when something is playing, like a meme then skipping fails
                     var (oldTrack, currentTrack) = await player.SkipAsync();
 
-                    var art = await currentTrack.FetchArtworkAsync();
-                    var embed = await _embedHandler.CreatePlayEmbed(currentTrack?.Title, currentTrack?.Author, currentTrack?.Url, art);
-
-                    await ReplyAsync(message: "Now Playing:", embed: embed);
-                    _logger.LogInformation($"Skipped: {oldTrack.Title}\nNow Playing: {player.Track.Title}");
+                    _logger.LogInformation($"Skipped: {oldTrack.Title}");
+                    await HandleNextTrackComment(currentTrack);
                 }
 
             }
@@ -328,7 +327,7 @@ namespace BrothermanBill.Modules
             return Task.CompletedTask;
         }
 
-        private Task MoveTrackToBack()
+        private async Task MoveTrackToBack()
         {
             var currentTrack = Player.Track;
             var trackList = Player.Queue.ToList();
@@ -341,9 +340,11 @@ namespace BrothermanBill.Modules
             Player.Queue.Clear();
             Player.Queue.Enqueue(trackList);
 
-            Player.SkipAsync();
+            await Player.SkipAsync();
 
-            return Task.CompletedTask;
+            await HandleNextTrackComment(Player.Track);
+
+            return;
         }
 
         private string CreateDurationString(LavaTrack track)
@@ -437,17 +438,14 @@ namespace BrothermanBill.Modules
                 await ResumeAsync();
             }
 
-            await AddToFront(track);
-            var art = await track.FetchArtworkAsync();
-            var embed = await _embedHandler.CreatePlayEmbed(track?.Title, track?.Author, track?.Url, art);            
+            await AddToFront(track);                      
 
             if (Player.PlayerState is PlayerState.Playing)
             {
                 await Player.SkipAsync();
-            }           
+            }
 
-            _logger.LogInformation($"Playing now:{track?.Title}");
-            await ReplyAsync(message: "Playing now:", embed: embed);
+            await HandleNextTrackComment(track);
         }
 
         private TimeSpan GetUrlParameterTime(string searchQuery)
@@ -469,6 +467,15 @@ namespace BrothermanBill.Modules
 
             var timeSpan = TimeSpan.FromSeconds(seconds);
             return timeSpan;
+        }
+
+        private async Task HandleNextTrackComment(LavaTrack track)
+        {
+            var art = await track.FetchArtworkAsync();
+            var embed = await _embedHandler.CreatePlayEmbed(track?.Title, track?.Author, track?.Url, art);
+
+            _logger.LogInformation($"Playing now:{track?.Title}");
+            await ReplyAsync(message: "Playing now:", embed: embed);
         }
     }
 }

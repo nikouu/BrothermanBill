@@ -1,4 +1,5 @@
-﻿using CliWrap;
+﻿using BrothermanBill.Services;
+using CliWrap;
 using Discord;
 using Discord.Commands;
 
@@ -6,6 +7,13 @@ namespace BrothermanBill.Modules
 {
     public class GeneralModule : ModuleBase<SocketCommandContext>
     {
+        private readonly StatusService _statusService;
+
+        public GeneralModule(StatusService statusService)
+        {
+            _statusService = statusService;
+        }
+
         [Command("ping")]
         public Task PingAsync()
             => ReplyAsync($"Current Ping {Context.Client.Latency}ms");
@@ -20,7 +28,7 @@ namespace BrothermanBill.Modules
         [Command("setgame")]
         public async Task GameAsync([Remainder] string setgame)  // [Remainder] takes all arguments as one
         {
-            await Context.Client.SetGameAsync(setgame);
+            await _statusService.SetStatus(setgame);
             await ReplyAsync("Set game succeeded");
         }
 
