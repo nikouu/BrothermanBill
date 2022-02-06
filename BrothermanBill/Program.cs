@@ -74,14 +74,14 @@ commands.Log += (LogMessage msg) =>
 
 socketClient.UserVoiceStateUpdated += async (user, before, after) =>
 {
-    if (after.VoiceChannel is null)
-    {
-        var currentUser = socketClient.CurrentUser.Username;
-        var hasOtherUsers = before.VoiceChannel.Users.Where(x => x.Username != currentUser).Any();
+    var currentUser = socketClient.CurrentUser.Username;
+    if (after.VoiceChannel is null && before.VoiceChannel.Users.Any(x => x.Username == currentUser))
+    {        
+        var hasOtherUsers = before.VoiceChannel.Users.Any(x => x.Username != currentUser);
         if (!hasOtherUsers)
         {
-            logger.LogInformation($"Leaving {after.VoiceChannel} as the last user, {user.Username}, has left.");
-            await socketClient.StopAsync();
+            logger.LogInformation($"Leaving {before.VoiceChannel} as the last user, {user.Username}, has left.");
+            await before.VoiceChannel.DisconnectAsync();
         }
     }
 };
@@ -90,30 +90,7 @@ await socketClient.LoginAsync(TokenType.Bot, config["DiscordBotToken"]);
 await socketClient.StartAsync();
 
 socketClient.Ready += async () =>
-{
-    var guild = socketClient.Guilds.FirstOrDefault();
-
-    var categoryId = guild.Channels.FirstOrDefault(x => x.Name == "Brother Bill's House")?.Id ?? (ulong)0;
-
-    if (categoryId == 0)
-    {
-        var newCategory = await guild.CreateCategoryChannelAsync("Brother Bill's House");
-        categoryId = newCategory.Id;
-    }
-
-    var roomId = guild.Channels.FirstOrDefault(x => x.Name == "kkona-truck")?.Id ?? (ulong)0;
-
-
-    if (roomId == 0)
-    {
-        var newRoom = await guild.CreateTextChannelAsync("kkona-truck", channelOptions =>
-        {
-            channelOptions.CategoryId = categoryId;
-            channelOptions.Position = 1;
-        });
-        roomId = newRoom.Id;
-    }
-
+{   
     if (!lavaNode.IsConnected)
     {
         await statusService.SetStatus("Waiting for LavaLink connection");
