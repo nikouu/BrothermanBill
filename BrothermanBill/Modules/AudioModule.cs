@@ -17,7 +17,6 @@ namespace BrothermanBill.Modules
     public class AudioModule : ModuleBase<SocketCommandContext>
     {
         private readonly LavaNode _lavaNode;
-        private readonly AudioService _audioService;
         private readonly EmbedHandler _embedHandler;
         private readonly ILogger _logger;
         private readonly MemeService _memeService;
@@ -247,7 +246,6 @@ namespace BrothermanBill.Modules
             await ReplyAsync(message: "Now playing:", embed: embed);
         }
 
-        // add a thing for the currently playing song
         [Command("Queue")]
         public async Task QueueAsync([Remainder] string command = "")
         {
