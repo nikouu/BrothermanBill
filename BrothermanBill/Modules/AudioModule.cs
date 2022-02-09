@@ -23,7 +23,7 @@ namespace BrothermanBill.Modules
         private readonly MemeService _memeService;
         private readonly StatusService _statusService;
 
-        private LavaPlayer Player 
+        private LavaPlayer Player
             => _lavaNode.GetPlayer(Context.Guild);
 
         public AudioModule(LavaNode lavaNode, AudioService audioService, MemeService memeService, EmbedHandler embedHandler, ILogger<AudioModule> logger, StatusService statusService)
@@ -93,11 +93,11 @@ namespace BrothermanBill.Modules
         }
 
         [Command("Play")]
-        public async Task PlayAsync([Remainder] string searchQuery) 
+        public async Task PlayAsync([Remainder] string searchQuery)
             => await HandlePlay(searchQuery, false);
 
         [Command("PlayNow")]
-        public async Task PlayNowAsync([Remainder] string searchQuery) 
+        public async Task PlayNowAsync([Remainder] string searchQuery)
             => await HandlePlay(searchQuery, true);
 
         // todo: add an embed of the next track coming up
@@ -249,23 +249,22 @@ namespace BrothermanBill.Modules
 
         // add a thing for the currently playing song
         [Command("Queue")]
-        public async Task QueueAsync()
+        public async Task QueueAsync([Remainder] string command = "")
         {
             if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
             {
                 await ReplyAsync("I'm not connected to a voice channel.");
                 return;
-            }
+            }           
 
-            if (player.Queue.Count == 0)
-            {
-                await ReplyAsync("Queue is empty.");
-                return;
-            }
+            var nowPlaying = Player?.Track is null ? null : $"{Player?.Track?.Title}";
+            var queue = player.Queue.Select(x => $"{x.Title}");
+            var displayFullQueue = command.ToLower() == "full";
+            var embed = await _embedHandler.CreateQueueEmbed(nowPlaying, queue, displayFullQueue);
 
             await ReplyAsync(player.PlayerState != PlayerState.Playing
                 ? "Nothing is playing."
-                : string.Join(Environment.NewLine, player.Queue.Select(x => x.Title)));
+                : "Queue:", embed: embed);
         }
 
         [Command("ClearQueue")]
@@ -378,7 +377,7 @@ namespace BrothermanBill.Modules
             }
 
             var seekTime = GetUrlParameterTime(searchQuery);
-            var searchResponse = await LavaLinkSearch(searchQuery);            
+            var searchResponse = await LavaLinkSearch(searchQuery);
             if (searchResponse.Status is SearchStatus.LoadFailed or SearchStatus.NoMatches)
             {
                 _logger.LogInformation($"I wasn't able to find anything for `{searchQuery}`.");
@@ -393,7 +392,7 @@ namespace BrothermanBill.Modules
             else
             {
                 var track = searchResponse.Tracks.FirstOrDefault();
-                
+
                 if (seekTime != TimeSpan.Zero)
                 {
                     track = new LavaTrack(track.Hash, track.Id, track.Title, track.Author, track.Url, seekTime, (long)track.Duration.TotalMilliseconds, track.CanSeek, track.IsStream, track.Source);
@@ -438,7 +437,7 @@ namespace BrothermanBill.Modules
                 await ResumeAsync();
             }
 
-            await AddToFront(track);                      
+            await AddToFront(track);
 
             if (Player.PlayerState is PlayerState.Playing)
             {
@@ -458,7 +457,8 @@ namespace BrothermanBill.Modules
             }
 
             // todo: check if the queryparameter key contains t, not just if any of the string contains t
-            if (!uri.Query.Contains("&t=")){
+            if (!uri.Query.Contains("&t="))
+            {
                 return new TimeSpan(0, 0, 0);
             }
 
