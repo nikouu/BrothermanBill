@@ -28,7 +28,6 @@ namespace BrothermanBill.Modules
         public AudioModule(LavaNode lavaNode, AudioService audioService, MemeService memeService, EmbedHandler embedHandler, ILogger<AudioModule> logger, StatusService statusService)
         {
             _lavaNode = lavaNode;
-            _audioService = audioService;
             _memeService = memeService;
             _embedHandler = embedHandler;
             _logger = logger;
