@@ -54,8 +54,6 @@ var logger = loggerFactory.CreateLogger<Program>();
 var statusService = services.GetRequiredService<StatusService>();
 var upTimeService = services.GetRequiredService<UptimeService>();
 
-await commands.AddModulesAsync(Assembly.GetEntryAssembly(), services);
-
 await commandHandler.InstallCommandsAsync();
 
 await statusService.SetStatus("Starting up");

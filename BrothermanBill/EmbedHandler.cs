@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using BrothermanBill.Models;
+using Discord;
 using System.Text;
 
 namespace BrothermanBill
@@ -55,7 +56,7 @@ namespace BrothermanBill
             }
 
             if (queue.Any())
-            {              
+            {
                 for (int i = 0; i < queue.Count() && (i < maxQueueDisplay || printFullQueue); i++)
                 {
                     stringBuilder.AppendLine($"{QueueEmojis.ElementAtOrDefault(i, "#️⃣")} {queue.ElementAt(i)}");
@@ -78,14 +79,23 @@ namespace BrothermanBill
             return embed;
         }
 
-        public async Task<Embed> CreateErrorEmbed(string source, string error)
+        public async Task<Embed> CreateCommandModuleEmbed(CommandModuleDto commandModule)
         {
-            var embed = await Task.Run(() => new EmbedBuilder()
-                .WithTitle($"ERROR OCCURED FROM - {source}")
-                .WithDescription($"**Error Deaitls**: \n{error}")
-                .WithColor(Color.DarkRed)
-                .WithCurrentTimestamp().Build());
-            return embed;
-        }        
+            var commandEmbed = new EmbedBuilder()
+                .WithTitle(commandModule.Name);
+
+            foreach (var module in commandModule.Modules)
+            {
+                var nameField = $"!{module.Name}";
+                _ = module.Aliases.RemoveAll(x => x.ToLower() == module.Name.ToLower());
+                if (module.Aliases.Any())
+                {                   
+                    nameField += $" ({string.Join(", ", module.Aliases)})";
+                }
+                commandEmbed.AddField(nameField, module.Summary);
+            }
+
+            return await Task.Run(() => commandEmbed.Build());
+        }
     }
 }

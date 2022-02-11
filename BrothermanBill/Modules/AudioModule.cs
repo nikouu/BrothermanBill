@@ -14,6 +14,8 @@ namespace BrothermanBill.Modules
     // https://raw.githubusercontent.com/freyacodes/Lavalink/master/LavalinkServer/application.yml.example
     // perhaps have a play now, that just injects a new track immediately, hten goes back to the old one
 
+    [Name("Audio Module")]
+    [Summary("Provides audio capabilities.")]
     public class AudioModule : ModuleBase<SocketCommandContext>
     {
         private readonly LavaNode _lavaNode;
@@ -35,6 +37,7 @@ namespace BrothermanBill.Modules
         }
 
         [Command("Join", RunMode = RunMode.Async)]
+        [Summary("Adds Brotherman Bill to the calling user's audio channel.")]
         public async Task JoinAsync()
         {
             if (_lavaNode.HasPlayer(Context.Guild))
@@ -63,6 +66,7 @@ namespace BrothermanBill.Modules
         }
 
         [Command("Leave")]
+        [Summary("Disconnects Brotherman Bill to the calling user's audio channel.")]
         public async Task LeaveAsync()
         {
             if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
@@ -91,21 +95,25 @@ namespace BrothermanBill.Modules
         }
 
         [Command("Play")]
+        [Summary("Adds a YouTube search query or a YouTube video or playlist URL to the queue.")]
         public async Task PlayAsync([Remainder] string searchQuery)
             => await HandlePlay(searchQuery, false);
 
         [Command("PlayNow")]
+        [Summary("Immediately plays a YouTube search query or a YouTube video or playlist URL.")]
         public async Task PlayNowAsync([Remainder] string searchQuery)
             => await HandlePlay(searchQuery, true);
 
         // todo: add an embed of the next track coming up
 
         [Command("MoveToBack")]
+        [Summary("Moves the currently playing track to the back of the queue.")]
         public async Task MoveToBack()
             => await MoveTrackToBack();
 
 
         [Command("Pause")]
+        [Summary("Pauses the current track.")]
         public async Task PauseAsync()
         {
             if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
@@ -132,6 +140,7 @@ namespace BrothermanBill.Modules
         }
 
         [Command("Resume")]
+        [Summary("Resumes the current track.")]
         public async Task ResumeAsync()
         {
             if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
@@ -158,6 +167,7 @@ namespace BrothermanBill.Modules
         }
 
         [Command("Stop")]
+        [Summary("Stops playing the current track and clears the queue.")]
         public async Task StopAsync()
         {
             if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
@@ -186,6 +196,7 @@ namespace BrothermanBill.Modules
         }
 
         [Command("Skip")]
+        [Summary("Skips the currently playing track.")]
         public async Task SkipAsync()
         {
             if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
@@ -222,7 +233,9 @@ namespace BrothermanBill.Modules
             }
         }
 
-        [Command("NowPlaying"), Alias("Np")]
+        [Command("NowPlaying")]
+        [Alias("Np")]
+        [Summary("Displays information about the currently playing track.")]
         public async Task NowPlayingAsync()
         {
             if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
@@ -246,6 +259,7 @@ namespace BrothermanBill.Modules
         }
 
         [Command("Queue")]
+        [Summary("Displays the current queue. Use \"full\" after the command for the entire queue.")]
         public async Task QueueAsync([Remainder] string command = "")
         {
             if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
@@ -265,6 +279,7 @@ namespace BrothermanBill.Modules
         }
 
         [Command("ClearQueue")]
+        [Summary("Clears the queue.")]
         public async Task ClearQueue()
         {
             Player.Queue.Clear();
@@ -273,6 +288,7 @@ namespace BrothermanBill.Modules
 
         [Command("Meme")]
         [Alias("m", "meem", "mmee", "emme")]
+        [Summary("Calls random meme soundbyte. Add a search query afterwards to search.")]
         public async Task RandomMeme([Remainder] string meme = "")
         {
             var url = string.IsNullOrWhiteSpace(meme)
