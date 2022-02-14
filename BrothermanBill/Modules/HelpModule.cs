@@ -1,10 +1,5 @@
 ﻿using BrothermanBill.Models;
 using Discord.Commands;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BrothermanBill.Modules
 {
@@ -22,6 +17,7 @@ namespace BrothermanBill.Modules
         }
 
         [Command("Help")]
+        [Alias("Commands")]
         [Summary("Lists all commands.")]
         public async Task Help()
         {

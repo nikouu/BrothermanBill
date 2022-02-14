@@ -89,7 +89,7 @@ namespace BrothermanBill
                 var nameField = $"!{module.Name}";
                 _ = module.Aliases.RemoveAll(x => x.ToLower() == module.Name.ToLower());
                 if (module.Aliases.Any())
-                {                   
+                {
                     nameField += $" ({string.Join(", ", module.Aliases)})";
                 }
                 commandEmbed.AddField(nameField, module.Summary);

@@ -266,7 +266,7 @@ namespace BrothermanBill.Modules
             {
                 await ReplyAsync("I'm not connected to a voice channel.");
                 return;
-            }           
+            }
 
             var nowPlaying = Player?.Track is null ? null : $"{Player?.Track?.Title}";
             var queue = player.Queue.Select(x => $"{x.Title}");

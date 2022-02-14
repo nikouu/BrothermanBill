@@ -2,8 +2,8 @@
 {
     public class UptimeService
     {
-        public DateTime StartTimeUtc { get; private set; }               
-       
+        public DateTime StartTimeUtc { get; private set; }
+
         public UptimeService()
         {
             StartTimeUtc = DateTime.UtcNow;

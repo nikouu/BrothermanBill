@@ -8,12 +8,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
-using System.Reflection;
 using Victoria;
 
 await StartLavalinkAsync();
-
-
 
 // this could also be the new .net6 ConfigurationManager
 var config = new ConfigurationBuilder()
@@ -74,7 +71,7 @@ socketClient.UserVoiceStateUpdated += async (user, before, after) =>
 {
     var currentUser = socketClient.CurrentUser.Username;
     if (after.VoiceChannel is null && before.VoiceChannel.Users.Any(x => x.Username == currentUser))
-    {        
+    {
         var hasOtherUsers = before.VoiceChannel.Users.Any(x => x.Username != currentUser);
         if (!hasOtherUsers)
         {
@@ -88,7 +85,7 @@ await socketClient.LoginAsync(TokenType.Bot, config["DiscordBotToken"]);
 await socketClient.StartAsync();
 
 socketClient.Ready += async () =>
-{   
+{
     if (!lavaNode.IsConnected)
     {
         await statusService.SetStatus("Waiting for LavaLink connection");
