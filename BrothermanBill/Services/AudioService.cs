@@ -1,7 +1,5 @@
-﻿using System.Collections.Concurrent;
-using Discord;
-using Discord.WebSocket;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
 using Victoria;
 using Victoria.Enums;
 using Victoria.EventArgs;

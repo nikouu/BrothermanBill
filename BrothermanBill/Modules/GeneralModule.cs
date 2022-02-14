@@ -1,6 +1,5 @@
 ﻿using BrothermanBill.Services;
 using CliWrap;
-using Discord;
 using Discord.Commands;
 
 namespace BrothermanBill.Modules

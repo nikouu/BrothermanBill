@@ -1,8 +1,6 @@
-﻿using BrothermanBill.Services;
-using Discord.Commands;
+﻿using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using System.Reflection;
 
 namespace BrothermanBill
@@ -13,8 +11,8 @@ namespace BrothermanBill
         private readonly CommandService _commands;
         private readonly IServiceProvider _services;
         private readonly ILogger _logger;
-        
-        
+
+
 
         // Retrieve client and CommandService instance via ctor
         public CommandHandlerService(DiscordSocketClient client, CommandService commands, IServiceProvider services, ILogger<CommandHandlerService> logger)
@@ -23,7 +21,7 @@ namespace BrothermanBill
             _client = client;
             _services = services;
             _logger = logger;
-            
+
         }
 
         public async Task InstallCommandsAsync()
@@ -58,7 +56,8 @@ namespace BrothermanBill
             // making sure the bot can call its own commands might be a mistake
 
             // if the message does not start with a command prefix
-            if(!message.HasCharPrefix('!', ref argPos)) {
+            if (!message.HasCharPrefix('!', ref argPos))
+            {
                 return;
             }
 
