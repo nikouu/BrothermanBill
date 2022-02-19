@@ -252,7 +252,7 @@ namespace BrothermanBill.Modules
 
             var track = Player.Track;
             var art = await track.FetchArtworkAsync();
-            var duration = track.IsStream ? "" : CreateDurationString(track);
+            var duration = track.IsStream ? "Live stream" : CreateDurationString(track);
             var embed = await _embedHandler.CreateNowPlayingEmbed(track?.Title, track?.Author, track?.Url, art, duration);
 
             await ReplyAsync(message: "Now playing:", embed: embed);
