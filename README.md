@@ -36,11 +36,7 @@ Brotherman Bill (aka BrothermanBill) came from the need to fill Discord rooms wi
 - [Lavalink](https://github.com/freyacodes/Lavalink)
 
 ## 🎙️Namesake
-The classic TerribleTim song, *Brotherman Bill*:
-<div align="center">
-<iframe width="560" height="315" src="https://www.youtube.com/embed/qkUVToIfrKg" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-</div>
-
+[The classic TerribleTim song, *Brotherman Bill*](https://www.youtube.com/watch?v=qkUVToIfrKg)
 
 
 *Yes that is the KKona emote, not Brotherman Bill*
