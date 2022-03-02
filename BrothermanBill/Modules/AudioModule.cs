@@ -9,11 +9,6 @@ using Victoria.Responses.Search;
 
 namespace BrothermanBill.Modules
 {
-    // https://www.oracle.com/java/technologies/downloads/#jdk17-windows
-    // https://github.com/Yucked/Victoria/wiki
-    // https://raw.githubusercontent.com/freyacodes/Lavalink/master/LavalinkServer/application.yml.example
-    // perhaps have a play now, that just injects a new track immediately, hten goes back to the old one
-
     [Name("Audio Module")]
     [Summary("Provides audio capabilities.")]
     public class AudioModule : ModuleBase<SocketCommandContext>
@@ -94,12 +89,12 @@ namespace BrothermanBill.Modules
             }
         }
 
-        [Command("Play")]
+        [Command("Play", RunMode = RunMode.Async)]
         [Summary("Adds a YouTube search query or a YouTube video or playlist URL to the queue.")]
         public async Task PlayAsync([Remainder] string searchQuery)
             => await HandlePlay(searchQuery, false);
 
-        [Command("PlayNow")]
+        [Command("PlayNow", RunMode = RunMode.Async)]
         [Summary("Immediately plays a YouTube search query or a YouTube video or playlist URL.")]
         public async Task PlayNowAsync([Remainder] string searchQuery)
             => await HandlePlay(searchQuery, true);
