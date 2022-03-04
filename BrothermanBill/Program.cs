@@ -96,14 +96,14 @@ socketClient.Ready += async () =>
 };
 
 // https://github.com/d4n3436/Fergun/blob/58fceda8463ee67a49708547fc20f928a8748361/src/FergunClient.cs#L232
-static async Task StartLavalinkAsync()
+static Task StartLavalinkAsync()
 {
     // written knowing full well there might be other java processes running, I'm developing this for my Raspi
     var processList = Process.GetProcessesByName("java");
     if (processList.Length == 0)
     {
         string lavalinkFile = Path.Combine(AppContext.BaseDirectory, "Lavalink", "Lavalink.jar");
-        if (!File.Exists(lavalinkFile)) return;
+        if (!File.Exists(lavalinkFile)) return Task.CompletedTask;
 
         var process = new ProcessStartInfo
         {
@@ -118,7 +118,7 @@ static async Task StartLavalinkAsync()
         Process.Start(process);
     }
 
-    return;
+    return Task.CompletedTask;
 }
 
 

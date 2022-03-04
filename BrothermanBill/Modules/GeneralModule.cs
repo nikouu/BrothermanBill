@@ -19,8 +19,8 @@ namespace BrothermanBill.Modules
 
         [Command("Ping")]
         [Summary("Gets latency between Brotherman Bill and Discord servers.")]
-        public Task PingAsync()
-            => ReplyAsync($"Current Ping {Context.Client.Latency}ms");
+        public async Task PingAsync()
+            => await ReplyAsync($"Current Ping {Context.Client.Latency}ms");
 
         [Command("Setgame")]
         [Summary("Manually set the status of Brotherman Bill")]
