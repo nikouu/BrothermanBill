@@ -2,6 +2,7 @@
 using Discord;
 using Discord.Commands;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 using System.Web;
 using Victoria;
 using Victoria.Enums;
@@ -127,6 +128,97 @@ namespace BrothermanBill.Modules
             {
                 await player.PauseAsync();
                 await ReplyAsync($"Paused: {player.Track.Title}");
+            }
+            catch (Exception exception)
+            {
+                await ReplyAsync(exception.Message);
+            }
+        }
+
+        // drink water and posture check shoutout
+
+        [Command("Seek")]
+        [Summary("Seeks with a given time. Formats include \"ss\", \"mm:ss\", \"h:mm:ss\". Can be negative.")]
+        public async Task Seek(string timeSpanString)
+        {
+            if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+            {
+                await ReplyAsync("I'm not connected to a voice channel.");
+                return;
+            }
+
+            if (player.PlayerState != PlayerState.Playing)
+            {
+                _logger.LogInformation("I cannot seek when I'm not playing anything.");
+                return;
+            }
+
+            var isNegative = timeSpanString.StartsWith("-");
+
+            var formats = new[] {
+                @"s",
+                @"ss",
+                @"m\:ss",
+                @"mm\:ss",
+                @"h\:mm\:ss"
+            };
+
+            if (!TimeSpan.TryParseExact(timeSpanString.Replace("-", ""), formats, CultureInfo.CurrentCulture, out TimeSpan duration))
+            {
+                return;
+            }
+
+            if (isNegative)
+            {
+                duration = -duration;
+            }
+
+            try
+            {
+                await player.SeekAsync(player.Track.Position + duration);
+                _logger.LogInformation($"Seeked `{player.Track.Title}` to {player.Track.Position + duration}.");
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception.Message);
+            }
+        }
+
+
+        [Command("SeekTo")]
+        [Summary("Seeks to a given time. Formats include \"ss\", \"mm:ss\", \"h:mm:ss\".")]
+        public async Task SeekTo(string timeSpanString)
+        {
+            if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+            {
+                await ReplyAsync("I'm not connected to a voice channel.");
+                return;
+            }
+
+            if (player.PlayerState != PlayerState.Playing)
+            {
+                _logger.LogInformation("I cannot seekTo when I'm not playing anything.");
+                return;
+            }
+
+            // might be overkill
+            var formats = new[] {
+                @"s",
+                @"ss",
+                @"m\:ss",
+                @"mm\:ss",
+                @"h\:mm\:ss"
+            };
+
+            if (!TimeSpan.TryParseExact(timeSpanString, formats, CultureInfo.CurrentCulture, out TimeSpan duration))
+            {
+                return;
+            }
+
+            try
+            {
+                await player.SeekAsync(duration);
+                await ReplyAsync($"I've seeked `{player.Track.Title}` to {duration}.");
             }
             catch (Exception exception)
             {
