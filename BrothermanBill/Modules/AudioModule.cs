@@ -19,6 +19,7 @@ namespace BrothermanBill.Modules
         private readonly ILogger _logger;
         private readonly MemeService _memeService;
         private readonly StatusService _statusService;
+        private readonly Dictionary<ulong, Task> _healthReminders = new Dictionary<ulong, Task>();
 
         private LavaPlayer Player
             => _lavaNode.GetPlayer(Context.Guild);
@@ -576,6 +577,11 @@ namespace BrothermanBill.Modules
 
             _logger.LogInformation($"Playing now:{track?.Title}");
             await ReplyAsync(message: "Playing now:", embed: embed);
+        }
+
+        private async Task StartHealthTimer()
+        {
+
         }
     }
 }
