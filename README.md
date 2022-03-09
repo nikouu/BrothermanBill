@@ -16,7 +16,7 @@ Brotherman Bill (aka BrothermanBill) came from the need to fill Discord rooms wi
 	- Vimeo
 	- Twitch
 - 🔀Playlist 
-	- The usual player controls (play, pause, stop, etc)
+	- The usual player controls (play, pause, seek, stop, etc)
 	- Queue up songs
 	- Play a song immediately (then resume where the previous song left off)
 	- Move current song to the back of the queue
