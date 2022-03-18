@@ -98,7 +98,7 @@ socketClient.Ready += async () =>
 // https://github.com/d4n3436/Fergun/blob/58fceda8463ee67a49708547fc20f928a8748361/src/FergunClient.cs#L232
 static Task StartLavalinkAsync()
 {
-    // written knowing full well there might be other java processes running, I'm developing this for my Raspi
+    // written knowing full well there might be other java processes running, but I'm developing this for my Raspi
     var processList = Process.GetProcessesByName("java");
     if (processList.Length == 0)
     {
@@ -121,5 +121,10 @@ static Task StartLavalinkAsync()
     return Task.CompletedTask;
 }
 
+AppDomain.CurrentDomain.ProcessExit += async (sender, eventArgs) =>
+{
+    await lavaNode.DisconnectAsync();
+    await socketClient.LogoutAsync();
+};
 
 await Task.Delay(Timeout.Infinite);
