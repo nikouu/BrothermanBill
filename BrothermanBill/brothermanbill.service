@@ -1,0 +1,12 @@
+﻿[Unit] 
+Description=Brotherman Bill - A Discord bot
+After=network.target
+
+[Service]
+ExecStart=/home/pi/.dotnet/dotnet /home/pi/BrothermanBill/BrothermanBill.dll
+WorkingDirectory=/home/pi/BrothermanBill/
+User=pi
+Group=pi
+
+[Install]
+WantedBy=multi-user.target
