@@ -19,11 +19,11 @@ if systemctl list-unit-files | grep brothermanbill.service; then
 fi
 
 if [ -f "/etc/systemd/system/brothermanbill.service" ] ; then
-	rm "/etc/systemd/system/brothermanbill.service"
+	sudo rm "/etc/systemd/system/brothermanbill.service"
 fi
 
 if [ -f "/usr/lib/systemd/system/brothermanbill.service" ] ; then
-	rm "/usr/lib/systemd/system/brothermanbill.service"
+	sudo rm "/usr/lib/systemd/system/brothermanbill.service"
 fi
 
 sudo systemctl daemon-reload
