@@ -28,6 +28,11 @@ namespace BrothermanBill.Services
                     return Task.CompletedTask;
                 }
 
+                if (arg.Message.Contains("Lavalink has been up for"))
+                {
+                    return Task.CompletedTask;
+                }
+
                 if (arg.Message.Contains("Lavalink reconnect attempt"))
                 {
                     _ = statusService.SetStatus("Attempting to connect to Lavalink");
@@ -36,7 +41,7 @@ namespace BrothermanBill.Services
                 if (arg.Message.Contains("Websocket connection established."))
                 {
                     _ = statusService.SetStatus(null);
-                }
+                }                
 
                 _logger.LogInformation(arg.Message);
                 return Task.CompletedTask;
