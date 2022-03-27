@@ -47,7 +47,7 @@ namespace BrothermanBill.Services
             //    return Task.CompletedTask;
             //};
 
-            _lavaNode.OnStatsReceived += OnStatsReceived;
+            //_lavaNode.OnStatsReceived += OnStatsReceived;
             _lavaNode.OnTrackEnded += OnTrackEnded;
             _lavaNode.OnTrackStarted += OnTrackStarted;
             _lavaNode.OnTrackException += OnTrackException;
@@ -61,11 +61,11 @@ namespace BrothermanBill.Services
             await _statusService.SetStatus(name);
         }
 
-        private Task OnStatsReceived(StatsEventArgs arg)
-        {
-            _logger.LogInformation($"Lavalink has been up for {arg.Uptime}.");
-            return Task.CompletedTask;
-        }
+        //private Task OnStatsReceived(StatsEventArgs arg)
+        //{
+        //    _logger.LogInformation($"Lavalink has been up for {arg.Uptime}.");
+        //    return Task.CompletedTask;
+        //}
 
         private async Task OnTrackStarted(TrackStartEventArgs arg)
         {
