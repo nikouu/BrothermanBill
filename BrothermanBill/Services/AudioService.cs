@@ -20,32 +20,32 @@ namespace BrothermanBill.Services
             _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
             _statusService = statusService;
 
-            _lavaNode.OnLog += arg =>
-            {
-                // todo: tidy
-                if (arg.Message.Contains("playerUpdate"))
-                {
-                    return Task.CompletedTask;
-                }
+            //_lavaNode.OnLog += arg =>
+            //{
+            //    // todo: tidy
+            //    if (arg.Message.Contains("playerUpdate"))
+            //    {
+            //        return Task.CompletedTask;
+            //    }
 
-                if (arg.Message.Contains("Lavalink has been up for"))
-                {
-                    return Task.CompletedTask;
-                }
+            //    if (arg.Message.Contains("Lavalink has been up for"))
+            //    {
+            //        return Task.CompletedTask;
+            //    }
 
-                if (arg.Message.Contains("Lavalink reconnect attempt"))
-                {
-                    _ = statusService.SetStatus("Attempting to connect to Lavalink");
-                }
+            //    if (arg.Message.Contains("Lavalink reconnect attempt"))
+            //    {
+            //        _ = statusService.SetStatus("Attempting to connect to Lavalink");
+            //    }
 
-                if (arg.Message.Contains("Websocket connection established."))
-                {
-                    _ = statusService.SetStatus(null);
-                }                
+            //    if (arg.Message.Contains("Websocket connection established."))
+            //    {
+            //        _ = statusService.SetStatus(null);
+            //    }                
 
-                _logger.LogInformation(arg.Message);
-                return Task.CompletedTask;
-            };
+            //    _logger.LogInformation(arg.Message);
+            //    return Task.CompletedTask;
+            //};
 
             _lavaNode.OnStatsReceived += OnStatsReceived;
             _lavaNode.OnTrackEnded += OnTrackEnded;
