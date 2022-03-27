@@ -1,11 +1,4 @@
 ﻿namespace BrothermanBill.Models
 {
-    public class CommandModuleDto
-    {
-        public string Name { get; set; }
-
-        public string Summary { get; set; }
-
-        public List<CommandDto> Modules { get; set; }
-    }
+    public readonly record struct CommandModuleDto(string Name, string Summary, List<CommandDto> Modules);
 }

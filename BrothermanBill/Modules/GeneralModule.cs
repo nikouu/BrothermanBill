@@ -43,8 +43,7 @@ namespace BrothermanBill.Modules
         public async Task Pick([Remainder] string list)
         {
             var games = list.Split(" ");
-            var random = new Random();
-            var game = games[random.Next(games.Length)];
+            var game = games[Random.Shared.Next(games.Length)];
             await ReplyAsync(game);
         }
 

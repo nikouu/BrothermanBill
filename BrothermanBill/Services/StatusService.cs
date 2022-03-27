@@ -15,7 +15,7 @@ namespace BrothermanBill.Services
             _logger = logger;
         }
 
-        public async Task SetStatus(string status)
+        public async Task SetStatus(string? status)
         {
             _logger.LogInformation($"Setting status to {status}");
             await _socketClient.SetActivityAsync(new Game(status));
