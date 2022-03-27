@@ -1,11 +1,4 @@
 ﻿namespace BrothermanBill.Models
 {
-    public class MyInstantsQueryRoot
-    {
-        public int Count { get; set; }
-        public string Next { get; set; }
-        public object Previous { get; set; }
-        public MyInstantsQueryResult[] Results { get; set; }
-
-    }
+    public readonly record struct MyInstantsQueryRoot(int Count, string Next, object Previous, MyInstantsQueryResult[] Results);
 }

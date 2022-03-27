@@ -14,28 +14,27 @@ namespace BrothermanBill.Services
 
         public async Task<string> GetRandomMeme()
         {
-            var random = new Random();
-            var page = random.Next(10);
+            var page = Random.Shared.Next(10);
             var memeList = await SearchMemes("meme", page);
 
-            var randomIndex = random.Next(memeList.Count());
+            var randomIndex = Random.Shared.Next(memeList.Count());
 
             return memeList[randomIndex].Sound;
         }
 
-        public async Task<string> GetMeme(string query)
+        public async Task<string?> GetMeme(string query)
         {
-            var random = new Random();
+            ArgumentNullException.ThrowIfNull(query);
+
             var memeList = await SearchMemes(query);
 
             if (memeList.Count() == 0)
             {
-                return String.Empty;
+                return string.Empty;
             }
             else
             {
-                //var randomIndex = random.Next(2);
-                return memeList?[0]?.Sound;
+                return memeList?[0].Sound;
             }
         }
 

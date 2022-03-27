@@ -1,14 +1,7 @@
 ﻿namespace BrothermanBill.Services
 {
-    public class UptimeService
+    public record class UptimeService(DateTime StartTimeUtc)
     {
-        public DateTime StartTimeUtc { get; private set; }
-
-        public UptimeService()
-        {
-            StartTimeUtc = DateTime.UtcNow;
-        }
-
         public TimeSpan UpTime => DateTime.UtcNow - StartTimeUtc;
     }
 }
