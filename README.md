@@ -9,6 +9,8 @@
 ## 🤔About
 Brotherman Bill (aka BrothermanBill) came from the need to fill Discord rooms with a little somethin' somethin'. Turns out, Discord bots aren't too bad to write yourself and BrothermanBill was born.  
 
+✨ Read all about this in my post: [Writing a .NET Music Discord Bot for a Raspberry Pi Zero 2 W: Brotherman Bill](https://www.nikouusitalo.com/blog/writing-a-net-music-discord-bot-for-a-raspberry-pi-zero-2-w-brotherman-bill/) ✨
+
 ## 📝Features
 - 🎧Audio
 	- Youtube
