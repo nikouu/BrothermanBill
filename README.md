@@ -33,6 +33,16 @@ Brotherman Bill (aka BrothermanBill) came from the need to fill Discord rooms wi
 	- Get ping between bot an Discord server
 	- !Kkona
 
+## Setup
+
+### .NET
+Requires [.NET 6 or higher](https://dotnet.microsoft.com/en-us/download).
+
+### Build
+```
+dotnet build
+```
+
 ## 🧱Dependencies
 - [Victoria](https://github.com/Yucked/Victoria/)
 - [Lavalink](https://github.com/freyacodes/Lavalink)
