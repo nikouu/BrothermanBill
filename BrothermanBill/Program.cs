@@ -92,6 +92,8 @@ socketClient.Ready += async () =>
         await lavaNode.ConnectAsync();
     }
 
+    await statusService.SetStatus("Ready");
+
     return;
 };
 
