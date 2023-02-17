@@ -43,6 +43,11 @@ Requires [.NET 6 or higher](https://dotnet.microsoft.com/en-us/download).
 dotnet build
 ```
 
+### Viewing the log on a Raspberry Pi
+```
+sudo journalctl -fu brothermanbill.service 
+```
+
 ## 🧱Dependencies
 - [Victoria](https://github.com/Yucked/Victoria/)
 - [Lavalink](https://github.com/freyacodes/Lavalink)

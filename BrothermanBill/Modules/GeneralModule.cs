@@ -1,6 +1,7 @@
 ﻿using BrothermanBill.Services;
 using CliWrap;
 using Discord.Commands;
+using System.Diagnostics;
 
 namespace BrothermanBill.Modules
 {
@@ -51,5 +52,27 @@ namespace BrothermanBill.Modules
         [Summary("Current Brotherman Bill uptime.")]
         public async Task UpTime()
             => await ReplyAsync($"Uptime: {_uptimeService.UpTime:dd\\.hh\\:mm\\:ss}");
+
+        [Command("Restart")]
+        [Summary("Kills and restarts BrothermanBill on *nix")]
+        public Task Restart()
+        {
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "bash",
+                    Arguments = $"-c \"restart.sh\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+            
+            process.Start();
+
+            return Task.CompletedTask;
+        }
     }
 }
