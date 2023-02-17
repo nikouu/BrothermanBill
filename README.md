@@ -48,6 +48,11 @@ dotnet build
 sudo journalctl -fu brothermanbill.service 
 ```
 
+### Running manually
+```
+dotnet BrothermanBill.dll
+```
+
 ## 🧱Dependencies
 - [Victoria](https://github.com/Yucked/Victoria/)
 - [Lavalink](https://github.com/freyacodes/Lavalink)

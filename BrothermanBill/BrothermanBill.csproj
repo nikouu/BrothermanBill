@@ -5,7 +5,7 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	<PublishSingleFile>true</PublishSingleFile>
+	<PublishSingleFile>false</PublishSingleFile>
 	<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
     <UserSecretsId>d8ac7fb1-cc77-4f55-a2cf-b49d4f8cc4db</UserSecretsId>
 	<GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
