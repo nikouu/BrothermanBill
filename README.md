@@ -32,6 +32,7 @@ Brotherman Bill (aka BrothermanBill) came from the need to fill Discord rooms wi
 	- Uptime
 	- Get ping between bot an Discord server
 	- !Kkona
+	- Restart Brotherman Bill
 
 ## Setup
 
