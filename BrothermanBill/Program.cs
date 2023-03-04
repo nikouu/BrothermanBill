@@ -19,13 +19,20 @@ var config = new ConfigurationBuilder()
              .AddUserSecrets<Program>(optional: true) // https://docs.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-6.0
              .Build();
 
+var discordSocketConfig = new DiscordSocketConfig
+{
+    GatewayIntents = GatewayIntents.All
+};
+
+var discordSocketClient = new DiscordSocketClient(discordSocketConfig);
+
 // https://dsharpplus.github.io/natives/index.html
 // https://docs.microsoft.com/en-us/dotnet/core/deploying/single-file
 // https://andrewlock.net/exploring-dotnet-6-part-10-new-dependency-injection-features-in-dotnet-6/
 // https://stackoverflow.com/questions/63585782/inject-a-service-with-parameters-in-asp-net-core-where-one-parameter-is-a-neste
 // perhaps give recognizer hints by getting together all the commands
 await using var services = new ServiceCollection()
-    .AddSingleton<DiscordSocketClient>()
+    .AddSingleton(discordSocketClient)
     .AddSingleton<CommandService>()
     .AddSingleton<CommandHandlerService>()
     .AddSingleton<AudioService>()
@@ -36,7 +43,7 @@ await using var services = new ServiceCollection()
     .Configure<CommandServiceConfig>(x => new CommandServiceConfig
     {
         CaseSensitiveCommands = true,
-        LogLevel = LogSeverity.Debug
+        LogLevel = LogSeverity.Debug,
     })
     .AddLavaNode(x => x.SelfDeaf = false)
     .AddLogging(builder => builder.AddConsole())
