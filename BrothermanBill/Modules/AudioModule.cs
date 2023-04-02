@@ -37,12 +37,6 @@ namespace BrothermanBill.Modules
         [Summary("Adds Brotherman Bill to the calling user's audio channel.")]
         public async Task JoinAsync()
         {
-            if (_lavaNode.HasPlayer(Context.Guild))
-            {
-                await ReplyAsync("I'm already connected to a voice channel!");
-                return;
-            }
-
             var voiceState = Context.User as IVoiceState;
             if (voiceState?.VoiceChannel == null)
             {
@@ -52,6 +46,11 @@ namespace BrothermanBill.Modules
 
             try
             {
+                if (_lavaNode.HasPlayer(Context.Guild))
+                {
+                    await LeaveAsync();
+                }
+
                 await _lavaNode.JoinAsync(voiceState.VoiceChannel, Context.Channel as ITextChannel);
                 _logger.LogInformation($"Joined {voiceState.VoiceChannel.Name}!");
 
