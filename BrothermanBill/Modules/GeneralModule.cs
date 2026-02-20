@@ -1,5 +1,4 @@
 ﻿using BrothermanBill.Services;
-using CliWrap;
 using Discord.Commands;
 using System.Diagnostics;
 

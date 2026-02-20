@@ -24,8 +24,13 @@ namespace BrothermanBill
 
         }
 
+        private bool _installed;
+
         public async Task InstallCommandsAsync()
         {
+            if (_installed) return;
+            _installed = true;
+
             // Hook the MessageReceived event into our command handler
             _client.MessageReceived += HandleCommandAsync;
 
@@ -78,10 +83,15 @@ namespace BrothermanBill
 
             // Execute the command with the command context we just
             // created, along with the service provider for precondition checks.
-            await _commands.ExecuteAsync(
+            var result = await _commands.ExecuteAsync(
                 context: context,
                 argPos: argPos,
                 services: _services);
+
+            if (!result.IsSuccess)
+            {
+                _logger.LogWarning("Command failed: {Error} | Reason: {Reason}", result.Error, result.ErrorReason);
+            }
         }
     }
 }

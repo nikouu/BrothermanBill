@@ -6,10 +6,12 @@ namespace BrothermanBill.Services
     public class MemeService
     {
         private readonly string _memeUrl;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public MemeService()
+        public MemeService(IHttpClientFactory httpClientFactory)
         {
             _memeUrl = "https://www.myinstants.com/api/v1/instants/";
+            _httpClientFactory = httpClientFactory;
         }
 
         public async Task<string> GetRandomMeme()
@@ -45,7 +47,7 @@ namespace BrothermanBill.Services
             {
                 urlParams = urlParams + $"&page={page}";
             }
-            using var client = new HttpClient();
+            using var client = _httpClientFactory.CreateClient();
 
             var response = await client.GetAsync(_memeUrl + urlParams);
 

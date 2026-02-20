@@ -1,146 +1,75 @@
-﻿using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
-using Victoria;
-using Victoria.Enums;
-using Victoria.EventArgs;
+using Lavalink4NET;
+using Lavalink4NET.Events.Players;
+using Lavalink4NET.Players;
+using Lavalink4NET.Players.Queued;
+using Lavalink4NET.Protocol.Payloads.Events;
+using Lavalink4NET.Tracks;
+using Microsoft.Extensions.Logging;
 
 namespace BrothermanBill.Services
 {
     public sealed class AudioService
     {
-        private readonly LavaNode _lavaNode;
-        private readonly ConcurrentDictionary<ulong, CancellationTokenSource> _disconnectTokens;
+        private readonly IAudioService _audioService;
         private readonly ILogger _logger;
         private readonly StatusService _statusService;
 
-        public AudioService(LavaNode lavaNode, ILogger<AudioService> logger, StatusService statusService)
+        public AudioService(IAudioService audioService, ILogger<AudioService> logger, StatusService statusService)
         {
-            _lavaNode = lavaNode;
+            _audioService = audioService;
             _logger = logger;
-            _disconnectTokens = new ConcurrentDictionary<ulong, CancellationTokenSource>();
             _statusService = statusService;
 
-            //_lavaNode.OnLog += arg =>
-            //{
-            //    // todo: tidy
-            //    if (arg.Message.Contains("playerUpdate"))
-            //    {
-            //        return Task.CompletedTask;
-            //    }
-
-            //    if (arg.Message.Contains("Lavalink has been up for"))
-            //    {
-            //        return Task.CompletedTask;
-            //    }
-
-            //    if (arg.Message.Contains("Lavalink reconnect attempt"))
-            //    {
-            //        _ = statusService.SetStatus("Attempting to connect to Lavalink");
-            //    }
-
-            //    if (arg.Message.Contains("Websocket connection established."))
-            //    {
-            //        _ = statusService.SetStatus(null);
-            //    }                
-
-            //    _logger.LogInformation(arg.Message);
-            //    return Task.CompletedTask;
-            //};
-
-            //_lavaNode.OnStatsReceived += OnStatsReceived;
-            _lavaNode.OnTrackEnded += OnTrackEnded;
-            _lavaNode.OnTrackStarted += OnTrackStarted;
-            _lavaNode.OnTrackException += OnTrackException;
-            _lavaNode.OnTrackStuck += OnTrackStuck;
-            _lavaNode.OnWebSocketClosed += OnWebSocketClosed;
+            _audioService.TrackStarted += OnTrackStarted;
+            _audioService.TrackEnded += OnTrackEnded;
+            _audioService.TrackException += OnTrackException;
+            _audioService.TrackStuck += OnTrackStuck;
+            _audioService.WebSocketClosed += OnWebSocketClosed;
         }
 
         public async Task UpdateStatusWithTrackName(string? name = null)
         {
-            _logger.LogInformation($"Updated currently playing status to: {name}");
+            _logger.LogInformation("Updated currently playing status to: {Name}", name);
             await _statusService.SetStatus(name);
         }
 
-        //private Task OnStatsReceived(StatsEventArgs arg)
-        //{
-        //    _logger.LogInformation($"Lavalink has been up for {arg.Uptime}.");
-        //    return Task.CompletedTask;
-        //}
-
-        private async Task OnTrackStarted(TrackStartEventArgs arg)
+        private async Task OnTrackStarted(object sender, TrackStartedEventArgs args)
         {
-            _logger.LogInformation($"Now playing: {arg.Track.Title}");
-            await UpdateStatusWithTrackName(arg.Track.Title);
-            if (!_disconnectTokens.TryGetValue(arg.Player.VoiceChannel.Id, out var value))
-            {
-                return;
-            }
-
-            if (value.IsCancellationRequested)
-            {
-                return;
-            }
-
-            value.Cancel(true);
-            await arg.Player.TextChannel.SendMessageAsync("Auto disconnect has been cancelled!");
+            _logger.LogInformation("Now playing: {Title}", args.Track.Title);
+            await UpdateStatusWithTrackName(args.Track.Title);
         }
 
-        private async Task OnTrackEnded(TrackEndedEventArgs args)
+        private async Task OnTrackEnded(object sender, TrackEndedEventArgs args)
         {
-            // workaround as in LavaPlayer.PlayAsync():L158 it doesn't pass the info on when to start the track from
-            if (args.Reason == TrackEndReason.Replaced)
-            {
-                var p = args.Player;
-                await p.SeekAsync(args.Player.Track.Position);
-                return;
-            }
-
             if (args.Reason != TrackEndReason.Finished)
             {
                 return;
             }
 
-            // if paused then resume
-
-            var player = args.Player;
-            if (!player.Queue.TryDequeue(out var lavaTrack))
+            // QueuedLavalinkPlayer handles auto-advance internally.
+            // We just update status when the queue is empty.
+            if (args.Player is IQueuedLavalinkPlayer queuedPlayer && queuedPlayer.Queue.Count == 0)
             {
                 _logger.LogInformation("Queue completed.");
                 await _statusService.SetStatus(null);
-                return;
             }
-
-            if (lavaTrack is null)
-            {
-                await player.TextChannel.SendMessageAsync("Next item in queue is not a track.");
-                return;
-            }
-
-            await args.Player.PlayAsync(x =>
-            {
-                x.Track = lavaTrack;
-                x.StartTime = lavaTrack.Position;
-            });
         }
 
-        private async Task OnTrackException(TrackExceptionEventArgs arg)
+        private Task OnTrackException(object sender, TrackExceptionEventArgs args)
         {
-            _logger.LogError($"Track {arg.Track.Title} threw an exception. Please check Lavalink console/logs.");
-            //arg.Player.Queue.Enqueue(arg.Track);
-            await arg.Player.TextChannel.SendMessageAsync($"Track {arg.Track.Title} could not play.");
+            _logger.LogError("Track {Title} threw an exception. Please check Lavalink console/logs.", args.Track.Title);
+            return Task.CompletedTask;
         }
 
-        private async Task OnTrackStuck(TrackStuckEventArgs arg)
+        private Task OnTrackStuck(object sender, TrackStuckEventArgs args)
         {
-            _logger.LogError(
-                $"Track {arg.Track.Title} got stuck for {arg.Threshold}ms. Please check Lavalink console/logs.");
-            //arg.Player.Queue.Enqueue(arg.Track);
-            await arg.Player.TextChannel.SendMessageAsync($"Track {arg.Track.Title} could not play. Reason: Stuck");
+            _logger.LogError("Track {Title} got stuck for {Threshold}. Please check Lavalink console/logs.", args.Track.Title, args.Threshold);
+            return Task.CompletedTask;
         }
 
-        private Task OnWebSocketClosed(WebSocketClosedEventArgs arg)
+        private Task OnWebSocketClosed(object sender, WebSocketClosedEventArgs args)
         {
-            _logger.LogCritical($"Discord WebSocket connection closed with following reason: {arg.Reason}");
+            _logger.LogCritical("Discord WebSocket connection closed with following reason: {Reason}", args.Reason);
             return Task.CompletedTask;
         }
     }
