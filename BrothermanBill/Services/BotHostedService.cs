@@ -81,7 +81,7 @@ namespace BrothermanBill.Services
                 {
                     try
                     {
-                        await _lavalinkAudioService.WaitForReadyAsync(cancellationToken).ConfigureAwait(false);
+                        await _lavalinkAudioService.WaitForReadyAsync(CancellationToken.None).ConfigureAwait(false);
                         await _statusService.SetStatus("Ready");
                         _logger.LogInformation("Lavalink is ready.");
                     }

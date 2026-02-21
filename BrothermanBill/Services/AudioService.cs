@@ -41,6 +41,8 @@ namespace BrothermanBill.Services
 
         private async Task OnTrackEnded(object sender, TrackEndedEventArgs args)
         {
+            _logger.LogInformation("Track ended: {Title}, Reason: {Reason}", args.Track.Title, args.Reason);
+
             if (args.Reason != TrackEndReason.Finished)
             {
                 return;
