@@ -1,6 +1,7 @@
 using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Lavalink4NET;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,7 @@ namespace BrothermanBill.Services
         private readonly ILogger<BotHostedService> _logger;
         private readonly StatusService _statusService;
         private readonly AudioService _audioService;
+        private readonly IAudioService _lavalinkAudioService;
         private Process? _lavalinkProcess;
 
         public BotHostedService(
@@ -26,7 +28,8 @@ namespace BrothermanBill.Services
             IConfiguration config,
             ILogger<BotHostedService> logger,
             StatusService statusService,
-            AudioService audioService)
+            AudioService audioService,
+            IAudioService lavalinkAudioService)
         {
             _client = client;
             _interactions = interactions;
@@ -35,6 +38,7 @@ namespace BrothermanBill.Services
             _logger = logger;
             _statusService = statusService;
             _audioService = audioService; // triggers DI construction & event subscription
+            _lavalinkAudioService = lavalinkAudioService;
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -71,7 +75,21 @@ namespace BrothermanBill.Services
 
             _client.Ready += async () =>
             {
-                await _statusService.SetStatus("Ready");
+                await _statusService.SetStatus("Waiting for Lavalink...");
+
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _lavalinkAudioService.WaitForReadyAsync(cancellationToken).ConfigureAwait(false);
+                        await _statusService.SetStatus("Ready");
+                        _logger.LogInformation("Lavalink is ready.");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed waiting for Lavalink.");
+                    }
+                });
             };
 
             await _interactionHandler.InitializeAsync();
@@ -120,9 +138,8 @@ namespace BrothermanBill.Services
                 FileName = "java",
                 Arguments = $"-jar \"{lavalinkFile}\"",
                 WorkingDirectory = Path.Combine(AppContext.BaseDirectory, "Lavalink"),
-                UseShellExecute = true,
-                CreateNoWindow = false,
-                WindowStyle = ProcessWindowStyle.Minimized
+                UseShellExecute = false,
+                CreateNoWindow = true,
             };
 
             _lavalinkProcess = Process.Start(processInfo);

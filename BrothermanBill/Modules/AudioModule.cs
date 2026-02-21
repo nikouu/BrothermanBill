@@ -34,6 +34,9 @@ namespace BrothermanBill.Modules
 
         private async ValueTask<ResumableQueuedPlayer?> GetPlayerAsync(bool connectToVoiceChannel = true)
         {
+            using var cts = new CancellationTokenSource(millisecondsDelay: 30000);
+            await _audioService.WaitForReadyAsync(cts.Token).ConfigureAwait(false);
+
             var retrieveOptions = new PlayerRetrieveOptions(
                 ChannelBehavior: connectToVoiceChannel ? PlayerChannelBehavior.Join : PlayerChannelBehavior.None);
 

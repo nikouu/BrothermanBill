@@ -3,6 +3,8 @@
 pkill -f "[d]otnet Brotherman"
 pkill -f "Lavalink.jar"
 
-echo "Process killed" #stops STDOUT from hanging and causing error
+echo "Processes killed, restarting..."
 
-sudo systemctl start brothermanbill.service
+sudo systemctl restart brothermanbill.service
+
+echo "brothermanbill.service restarted."

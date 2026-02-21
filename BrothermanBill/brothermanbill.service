@@ -3,10 +3,12 @@ Description=Brotherman Bill - A Discord bot
 After=network.target
 
 [Service]
-ExecStart=/home/pi/.dotnet/dotnet /home/pi/BrothermanBill/BrothermanBill.dll
+ExecStart=/home/pi/BrothermanBill/BrothermanBill
 WorkingDirectory=/home/pi/BrothermanBill/
 User=pi
 Group=pi
+Restart=on-failure
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
