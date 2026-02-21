@@ -1,5 +1,4 @@
-﻿using BrothermanBill.Models;
-using Discord;
+﻿using Discord;
 using System.Text;
 
 namespace BrothermanBill
@@ -7,8 +6,6 @@ namespace BrothermanBill
     public class EmbedHandler
     {
         private Color MusicColour => Color.DarkPurple;
-
-        private readonly string[] QueueEmojis = new[] { "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟" };
 
         public async Task<Embed> CreateBasicEmbed(string title, string description, Color color)
         {
@@ -52,24 +49,28 @@ namespace BrothermanBill
 
             if (nowPlaying != null)
             {
-                stringBuilder.AppendLine($"🎵 {nowPlaying}");
+                stringBuilder.AppendLine($"**Now playing:** {nowPlaying}");
             }
 
             if (queue.Any())
             {
+                stringBuilder.AppendLine();
+                stringBuilder.AppendLine("**Up next:**");
+
                 for (int i = 0; i < queue.Count() && (i < maxQueueDisplay || printFullQueue); i++)
                 {
-                    stringBuilder.AppendLine($"{QueueEmojis.ElementAtOrDefault(i, "#️⃣")} {queue.ElementAt(i)}");
+                    stringBuilder.AppendLine($"`{i + 1}.` {queue.ElementAt(i)}");
                 }
 
                 if (!printFullQueue && queue.Count() > maxQueueDisplay)
                 {
-                    stringBuilder.AppendLine($"#️⃣ *and {queue.Count() - maxQueueDisplay} more... see all with !queue full*");
+                    stringBuilder.AppendLine($"*and {queue.Count() - maxQueueDisplay} more... use /queue full*");
                 }
             }
             else
             {
-                stringBuilder.AppendLine($"*️⃣ *Queue empty*");
+                stringBuilder.AppendLine();
+                stringBuilder.AppendLine("*Queue empty*");
             }
 
             var embed = await Task.Run(() => new EmbedBuilder()
@@ -77,25 +78,6 @@ namespace BrothermanBill
                 .WithDescription(stringBuilder.ToString())
                 .Build());
             return embed;
-        }
-
-        public async Task<Embed> CreateCommandModuleEmbed(CommandModuleDto commandModule)
-        {
-            var commandEmbed = new EmbedBuilder()
-                .WithTitle(commandModule.Name);
-
-            foreach (var module in commandModule.Modules)
-            {
-                var nameField = $"!{module.Name}";
-                _ = module.Aliases.RemoveAll(x => x.ToLower() == module.Name.ToLower());
-                if (module.Aliases.Any())
-                {
-                    nameField += $" ({string.Join(", ", module.Aliases)})";
-                }
-                commandEmbed.AddField(nameField, module.Summary);
-            }
-
-            return await Task.Run(() => commandEmbed.Build());
         }
     }
 }

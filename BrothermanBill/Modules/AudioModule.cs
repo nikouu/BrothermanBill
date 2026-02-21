@@ -1,6 +1,8 @@
+using BrothermanBill.Models;
+using BrothermanBill.Players;
 using BrothermanBill.Services;
 using Discord;
-using Discord.Commands;
+using Discord.Interactions;
 using Lavalink4NET;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Queued;
@@ -13,9 +15,7 @@ using System.Web;
 
 namespace BrothermanBill.Modules
 {
-    [Name("Audio Module")]
-    [Summary("Provides audio capabilities.")]
-    public class AudioModule : ModuleBase<SocketCommandContext>
+    public class AudioModule : InteractionModuleBase<SocketInteractionContext>
     {
         private readonly IAudioService _audioService;
         private readonly EmbedHandler _embedHandler;
@@ -32,15 +32,18 @@ namespace BrothermanBill.Modules
             _statusService = statusService;
         }
 
-        private async ValueTask<QueuedLavalinkPlayer?> GetPlayerAsync(bool connectToVoiceChannel = true)
+        private async ValueTask<ResumableQueuedPlayer?> GetPlayerAsync(bool connectToVoiceChannel = true)
         {
             var retrieveOptions = new PlayerRetrieveOptions(
                 ChannelBehavior: connectToVoiceChannel ? PlayerChannelBehavior.Join : PlayerChannelBehavior.None);
 
             var voiceState = Context.User as IVoiceState;
 
+            var playerFactory = PlayerFactory.Create<ResumableQueuedPlayer, QueuedLavalinkPlayerOptions>(
+                properties => new ResumableQueuedPlayer(properties));
+
             var result = await _audioService.Players
-                .RetrieveAsync(Context.Guild.Id, voiceState?.VoiceChannel?.Id, PlayerFactory.Queued, Options.Create(new QueuedLavalinkPlayerOptions()), retrieveOptions);
+                .RetrieveAsync(Context.Guild.Id, voiceState?.VoiceChannel?.Id, playerFactory, Options.Create(new QueuedLavalinkPlayerOptions()), retrieveOptions);
 
             if (!result.IsSuccess)
             {
@@ -50,56 +53,61 @@ namespace BrothermanBill.Modules
                     PlayerRetrieveStatus.BotNotConnected => "I'm not connected to a voice channel.",
                     _ => "Unknown error.",
                 };
-                await ReplyAsync(errorMessage);
+                await FollowupAsync(errorMessage);
                 return null;
             }
 
             return result.Player;
         }
 
-        [Command("Join", RunMode = RunMode.Async)]
-        [Summary("Adds Brotherman Bill to the calling user's audio channel.")]
+        [SlashCommand("join", "Adds Brotherman Bill to the calling user's audio channel.")]
         public async Task JoinAsync()
         {
+            await DeferAsync();
             var player = await GetPlayerAsync(connectToVoiceChannel: true);
             if (player is not null)
             {
                 _logger.LogInformation("Joined voice channel!");
+                await FollowupAsync("Joined!");
             }
         }
 
-        [Command("Leave")]
-        [Summary("Disconnects Brotherman Bill from the voice channel.")]
+        [SlashCommand("leave", "Disconnects Brotherman Bill from the voice channel.")]
         public async Task LeaveAsync()
         {
+            await DeferAsync();
             var player = await GetPlayerAsync(connectToVoiceChannel: false);
             if (player is null) return;
 
             await player.DisconnectAsync();
-            await ReplyAsync(":(");
+            await FollowupAsync(":(");
         }
 
-        [Command("Play", RunMode = RunMode.Async)]
-        [Summary("Adds a YouTube search query or a YouTube video or playlist URL to the queue.")]
-        public async Task PlayAsync([Remainder] string searchQuery)
-            => await HandlePlay(searchQuery, false);
+        [SlashCommand("play", "Adds a YouTube search query or a YouTube video or playlist URL to the queue.")]
+        public async Task PlayAsync([Summary(description: "Search query or URL")] string query)
+        {
+            await DeferAsync();
+            await HandlePlay(query, false);
+        }
 
-        [Command("PlayNow", RunMode = RunMode.Async)]
-        [Summary("Immediately plays a YouTube search query or a YouTube video or playlist URL.")]
-        public async Task PlayNowAsync([Remainder] string searchQuery)
-            => await HandlePlay(searchQuery, true);
+        [SlashCommand("playnow", "Immediately plays a YouTube search query or a YouTube video or playlist URL.")]
+        public async Task PlayNowAsync([Summary(description: "Search query or URL")] string query)
+        {
+            await DeferAsync();
+            await HandlePlay(query, true);
+        }
 
-        [Command("MoveToBack")]
-        [Summary("Moves the currently playing track to the back of the queue.")]
+        [SlashCommand("movetoback", "Moves the currently playing track to the back of the queue.")]
         public async Task MoveToBack()
         {
+            await DeferAsync();
             var player = await GetPlayerAsync(false);
             if (player is null) return;
 
             var currentTrack = player.CurrentTrack;
             if (currentTrack is null)
             {
-                await ReplyAsync("Nothing is playing.");
+                await FollowupAsync("Nothing is playing.");
                 return;
             }
 
@@ -113,37 +121,39 @@ namespace BrothermanBill.Modules
             }
         }
 
-        [Command("Pause")]
-        [Summary("Pauses the current track.")]
+        [SlashCommand("pause", "Pauses the current track.")]
         public async Task PauseAsync()
         {
+            await DeferAsync();
             var player = await GetPlayerAsync(false);
             if (player is null) return;
 
             if (player.State != PlayerState.Playing)
             {
                 _logger.LogInformation("Cannot pause when not playing!");
+                await FollowupAsync("Nothing is playing to pause.");
                 return;
             }
 
             await player.PauseAsync();
-            await ReplyAsync($"Paused: {player.CurrentTrack?.Title}");
+            await FollowupAsync($"Paused: {player.CurrentTrack?.Title}");
         }
 
-        [Command("Seek")]
-        [Summary("Seeks with a given time. Formats include \"ss\", \"mm:ss\", \"h:mm:ss\". Can be negative.")]
-        public async Task Seek(string timeSpanString)
+        [SlashCommand("seek", "Seeks with a given time. Formats: \"ss\", \"mm:ss\", \"h:mm:ss\". Can be negative.")]
+        public async Task Seek([Summary(description: "Time to seek by (e.g. 30, -1:00, 1:30:00)")] string time)
         {
+            await DeferAsync();
             var player = await GetPlayerAsync(false);
             if (player is null) return;
 
             if (player.CurrentTrack is null)
             {
                 _logger.LogInformation("Cannot seek when not playing.");
+                await FollowupAsync("Nothing is playing.");
                 return;
             }
 
-            var isNegative = timeSpanString.StartsWith("-");
+            var isNegative = time.StartsWith("-");
 
             var formats = new[] {
                 @"s",
@@ -153,8 +163,9 @@ namespace BrothermanBill.Modules
                 @"h\:mm\:ss"
             };
 
-            if (!TimeSpan.TryParseExact(timeSpanString.Replace("-", ""), formats, CultureInfo.CurrentCulture, out TimeSpan duration))
+            if (!TimeSpan.TryParseExact(time.Replace("-", ""), formats, CultureInfo.CurrentCulture, out TimeSpan duration))
             {
+                await FollowupAsync("Invalid time format.");
                 return;
             }
 
@@ -168,23 +179,26 @@ namespace BrothermanBill.Modules
                 var currentPosition = player.Position?.Position ?? TimeSpan.Zero;
                 await player.SeekAsync(currentPosition + duration);
                 _logger.LogInformation("Seeked {Title} to {Position}.", player.CurrentTrack.Title, currentPosition + duration);
+                await FollowupAsync($"Seeked `{player.CurrentTrack.Title}` by {time}.");
             }
             catch (Exception exception)
             {
                 _logger.LogError(exception, "Seek failed.");
+                await FollowupAsync("Seek failed.");
             }
         }
 
-        [Command("SeekTo")]
-        [Summary("Seeks to a given time. Formats include \"ss\", \"mm:ss\", \"h:mm:ss\".")]
-        public async Task SeekTo(string timeSpanString)
+        [SlashCommand("seekto", "Seeks to a given time. Formats: \"ss\", \"mm:ss\", \"h:mm:ss\".")]
+        public async Task SeekTo([Summary(description: "Time to seek to (e.g. 30, 1:00, 1:30:00)")] string time)
         {
+            await DeferAsync();
             var player = await GetPlayerAsync(false);
             if (player is null) return;
 
             if (player.CurrentTrack is null)
             {
                 _logger.LogInformation("Cannot seekTo when not playing.");
+                await FollowupAsync("Nothing is playing.");
                 return;
             }
 
@@ -196,49 +210,53 @@ namespace BrothermanBill.Modules
                 @"h\:mm\:ss"
             };
 
-            if (!TimeSpan.TryParseExact(timeSpanString, formats, CultureInfo.CurrentCulture, out TimeSpan duration))
+            if (!TimeSpan.TryParseExact(time, formats, CultureInfo.CurrentCulture, out TimeSpan duration))
             {
+                await FollowupAsync("Invalid time format.");
                 return;
             }
 
             try
             {
                 await player.SeekAsync(duration);
-                await ReplyAsync($"Seeked `{player.CurrentTrack.Title}` to {duration}.");
+                await FollowupAsync($"Seeked `{player.CurrentTrack.Title}` to {duration}.");
             }
             catch (Exception exception)
             {
-                await ReplyAsync(exception.Message);
+                await FollowupAsync(exception.Message);
             }
         }
 
-        [Command("Resume")]
-        [Summary("Resumes the current track.")]
+        [SlashCommand("resume", "Resumes the current track.")]
         public async Task ResumeAsync()
         {
+            await DeferAsync();
             var player = await GetPlayerAsync(false);
             if (player is null) return;
 
             if (player.State != PlayerState.Paused)
             {
                 _logger.LogInformation("Cannot resume when not paused!");
+                await FollowupAsync("Nothing is paused.");
                 return;
             }
 
             await player.ResumeAsync();
             _logger.LogInformation("Resumed: {Title}", player.CurrentTrack?.Title);
+            await FollowupAsync($"Resumed: {player.CurrentTrack?.Title}");
         }
 
-        [Command("Stop")]
-        [Summary("Stops playing the current track and clears the queue.")]
+        [SlashCommand("stop", "Stops playing the current track and clears the queue.")]
         public async Task StopAsync()
         {
+            await DeferAsync();
             var player = await GetPlayerAsync(false);
             if (player is null) return;
 
             if (player.CurrentTrack is null)
             {
                 _logger.LogInformation("Attempted stop with nothing playing.");
+                await FollowupAsync("Nothing is playing.");
                 return;
             }
 
@@ -246,20 +264,29 @@ namespace BrothermanBill.Modules
             await player.StopAsync();
             _logger.LogInformation("Stopped and cleared queue.");
             await _statusService.SetStatus(null);
+            await FollowupAsync("Stopped and cleared queue.");
         }
 
-        [Command("Skip")]
-        [Summary("Skips the currently playing track.")]
+        [SlashCommand("skip", "Skips the currently playing track.")]
         public async Task SkipAsync()
         {
+            await DeferAsync();
             var player = await GetPlayerAsync(false);
             if (player is null) return;
 
-            if (player.CurrentTrack is null) return;
+            if (player.CurrentTrack is null)
+            {
+                await FollowupAsync("Nothing is playing.");
+                return;
+            }
 
             if (player.Queue.Count == 0)
             {
-                await StopAsync();
+                await player.Queue.ClearAsync();
+                await player.StopAsync();
+                _logger.LogInformation("Stopped and cleared queue.");
+                await _statusService.SetStatus(null);
+                await FollowupAsync("Stopped and cleared queue.");
                 return;
             }
 
@@ -274,18 +301,17 @@ namespace BrothermanBill.Modules
             }
         }
 
-        [Command("NowPlaying")]
-        [Alias("Np")]
-        [Summary("Displays information about the currently playing track.")]
+        [SlashCommand("nowplaying", "Displays information about the currently playing track.")]
         public async Task NowPlayingAsync()
         {
+            await DeferAsync();
             var player = await GetPlayerAsync(false);
             if (player is null) return;
 
             var track = player.CurrentTrack;
             if (track is null)
             {
-                await ReplyAsync("Playing nothing.");
+                await FollowupAsync("Playing nothing.");
                 return;
             }
 
@@ -293,13 +319,17 @@ namespace BrothermanBill.Modules
             var duration = track.IsLiveStream ? "Live stream" : CreateDurationString(player);
             var embed = await _embedHandler.CreateNowPlayingEmbed(track.Title, track.Author, track.Uri?.ToString() ?? "", art, duration);
 
-            await ReplyAsync(message: "Now playing:", embed: embed);
+            await FollowupAsync(text: "Now playing:", embed: embed);
         }
 
-        [Command("Queue")]
-        [Summary("Displays the current queue. Use \"full\" after the command for the entire queue.")]
-        public async Task QueueAsync([Remainder] string command = "")
+        [SlashCommand("np", "Displays information about the currently playing track.")]
+        public async Task NpAsync()
+            => await NowPlayingAsync();
+
+        [SlashCommand("queue", "Displays the current queue. Use \"full\" for the entire queue.")]
+        public async Task QueueAsync([Summary(description: "Use \"full\" to see the entire queue")] string command = "")
         {
+            await DeferAsync();
             var player = await GetPlayerAsync(false);
             if (player is null) return;
 
@@ -308,45 +338,46 @@ namespace BrothermanBill.Modules
             var displayFullQueue = command.ToLower() == "full";
             var embed = await _embedHandler.CreateQueueEmbed(nowPlaying, queue, displayFullQueue);
 
-            await ReplyAsync(player.CurrentTrack is null
+            await FollowupAsync(text: player.CurrentTrack is null
                 ? "Nothing is playing."
                 : "Queue:", embed: embed);
         }
 
-        [Command("ClearQueue")]
-        [Summary("Clears the queue.")]
+        [SlashCommand("clearqueue", "Clears the queue.")]
         public async Task ClearQueue()
         {
+            await DeferAsync();
             var player = await GetPlayerAsync(false);
             if (player is null) return;
 
             await player.Queue.ClearAsync();
-            await ReplyAsync("Queue cleared.");
+            await FollowupAsync("Queue cleared.");
         }
 
-        [Command("Meme")]
-        [Alias("m", "meem", "mmee", "emme")]
-        [Summary("Calls random meme soundbyte. Add a search query afterwards to search.")]
-        public async Task RandomMeme([Remainder] string meme = "")
+        [SlashCommand("meme", "Calls random meme soundbyte. Add a search query to search.")]
+        public async Task RandomMeme([Summary(description: "Search query for a specific meme")] string meme = "")
         {
+            await DeferAsync();
+
             var url = string.IsNullOrWhiteSpace(meme)
                 ? await _memeService.GetRandomMeme()
                 : await _memeService.GetMeme(meme);
 
             if (!string.IsNullOrWhiteSpace(url))
             {
-                await PlayNowAsync(url);
+                await HandlePlay(url, true);
                 return;
             }
 
             _logger.LogInformation("No meme sound clip for {Meme}.", meme);
+            await FollowupAsync($"No meme sound clip found for `{meme}`.");
         }
 
         private async Task HandlePlay(string searchQuery, bool playImmediately)
         {
             if (string.IsNullOrWhiteSpace(searchQuery))
             {
-                await ReplyAsync("Please provide search terms.");
+                await FollowupAsync("Please provide search terms.");
                 return;
             }
 
@@ -368,7 +399,7 @@ namespace BrothermanBill.Modules
                     {
                         await player.PlayAsync(t);
                     }
-                    await ReplyAsync($"Enqueued {loadResult.Tracks.Length} songs.");
+                    await FollowupAsync($"Enqueued {loadResult.Tracks.Length} songs.");
                     return;
                 }
             }
@@ -377,7 +408,7 @@ namespace BrothermanBill.Modules
             if (track is null)
             {
                 _logger.LogInformation("Couldn't find anything for {Query}.", searchQuery);
-                await ReplyAsync($"Couldn't find anything for `{searchQuery}`.");
+                await FollowupAsync($"Couldn't find anything for `{searchQuery}`.");
                 return;
             }
 
@@ -402,12 +433,12 @@ namespace BrothermanBill.Modules
                 {
                     var art = track.ArtworkUri?.ToString() ?? "";
                     var embed = await _embedHandler.CreatePlayEmbed(track.Title, track.Author, track.Uri?.ToString() ?? "", art);
-                    await ReplyAsync(message: "Queued:", embed: embed);
+                    await FollowupAsync(text: "Queued:", embed: embed);
                 }
             }
         }
 
-        private async Task PlayTrackImmediately(QueuedLavalinkPlayer player, LavalinkTrack track, TrackPlayProperties properties)
+        private async Task PlayTrackImmediately(ResumableQueuedPlayer player, LavalinkTrack track, TrackPlayProperties properties)
         {
             if (player.State == PlayerState.Paused)
             {
@@ -417,16 +448,17 @@ namespace BrothermanBill.Modules
             // Save current track at front of queue so it resumes after the interruption
             if (player.CurrentTrack is not null && !player.CurrentTrack.IsLiveStream)
             {
-                await player.Queue.InsertAsync(0, new TrackQueueItem(new TrackReference(player.CurrentTrack)));
+                var resumePosition = player.Position?.Position ?? TimeSpan.Zero;
+                await player.Queue.InsertAsync(0, new ResumableTrackQueueItem(player.CurrentTrack, resumePosition));
             }
 
-            // Play new track immediately (bypasses queue)
-            await player.PlayAsync(new TrackQueueItem(track), properties);
+            // Play new track immediately (replaces current track, bypasses queue)
+            await player.PlayAsync(track, enqueue: false, properties: properties);
 
             await HandleNextTrackComment(track);
         }
 
-        private string CreateDurationString(QueuedLavalinkPlayer player)
+        private string CreateDurationString(ResumableQueuedPlayer player)
         {
             var track = player.CurrentTrack;
             if (track is null) return "";
@@ -443,9 +475,6 @@ namespace BrothermanBill.Modules
             if (!Uri.TryCreate(searchQuery, UriKind.Absolute, out var uri))
                 return TimeSpan.Zero;
 
-            if (!uri.Query.Contains("&t="))
-                return TimeSpan.Zero;
-
             var queryString = HttpUtility.ParseQueryString(uri.Query);
             var tValue = queryString.Get("t");
             if (tValue is null || !int.TryParse(tValue, out var seconds))
@@ -460,7 +489,7 @@ namespace BrothermanBill.Modules
             var embed = await _embedHandler.CreatePlayEmbed(track.Title, track.Author, track.Uri?.ToString() ?? "", art);
 
             _logger.LogInformation("Playing now: {Title}", track.Title);
-            await ReplyAsync(message: "Playing now:", embed: embed);
+            await FollowupAsync(text: "Playing now:", embed: embed);
         }
     }
 }

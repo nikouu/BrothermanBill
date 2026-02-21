@@ -1,5 +1,5 @@
 using Discord;
-using Discord.Commands;
+using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -11,8 +11,8 @@ namespace BrothermanBill.Services
     public class BotHostedService : IHostedService
     {
         private readonly DiscordSocketClient _client;
-        private readonly CommandService _commands;
-        private readonly CommandHandlerService _commandHandler;
+        private readonly InteractionService _interactions;
+        private readonly InteractionHandlerService _interactionHandler;
         private readonly IConfiguration _config;
         private readonly ILogger<BotHostedService> _logger;
         private readonly StatusService _statusService;
@@ -21,16 +21,16 @@ namespace BrothermanBill.Services
 
         public BotHostedService(
             DiscordSocketClient client,
-            CommandService commands,
-            CommandHandlerService commandHandler,
+            InteractionService interactions,
+            InteractionHandlerService interactionHandler,
             IConfiguration config,
             ILogger<BotHostedService> logger,
             StatusService statusService,
             AudioService audioService)
         {
             _client = client;
-            _commands = commands;
-            _commandHandler = commandHandler;
+            _interactions = interactions;
+            _interactionHandler = interactionHandler;
             _config = config;
             _logger = logger;
             _statusService = statusService;
@@ -47,7 +47,7 @@ namespace BrothermanBill.Services
                 return Task.CompletedTask;
             };
 
-            _commands.Log += msg =>
+            _interactions.Log += msg =>
             {
                 _logger.LogInformation("{Message}", msg.ToString());
                 return Task.CompletedTask;
@@ -74,7 +74,7 @@ namespace BrothermanBill.Services
                 await _statusService.SetStatus("Ready");
             };
 
-            await _commandHandler.InstallCommandsAsync();
+            await _interactionHandler.InitializeAsync();
             await _statusService.SetStatus("Starting up");
 
             await _client.LoginAsync(TokenType.Bot, _config["DiscordBotToken"]);

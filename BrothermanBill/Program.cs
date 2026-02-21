@@ -1,7 +1,7 @@
 ﻿using BrothermanBill;
 using BrothermanBill.Services;
 using Discord;
-using Discord.Commands;
+using Discord.Interactions;
 using Discord.WebSocket;
 using Lavalink4NET.Extensions;
 using Microsoft.Extensions.Configuration;
@@ -15,16 +15,15 @@ builder.Configuration.AddUserSecrets<Program>();
 
 builder.Services.AddSingleton(sp => new DiscordSocketClient(new DiscordSocketConfig
 {
-    GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMessages | GatewayIntents.GuildVoiceStates | GatewayIntents.MessageContent
+    GatewayIntents = GatewayIntents.Guilds | GatewayIntents.GuildMessages | GatewayIntents.GuildVoiceStates
 }));
 
-builder.Services.AddSingleton(new CommandService(new CommandServiceConfig
+builder.Services.AddSingleton(sp => new InteractionService(sp.GetRequiredService<DiscordSocketClient>(), new InteractionServiceConfig
 {
-    CaseSensitiveCommands = false,
     LogLevel = LogSeverity.Debug,
 }));
 
-builder.Services.AddSingleton<CommandHandlerService>();
+builder.Services.AddSingleton<InteractionHandlerService>();
 builder.Services.AddSingleton<AudioService>();
 builder.Services.AddSingleton<MemeService>();
 builder.Services.AddSingleton<EmbedHandler>();
@@ -41,4 +40,4 @@ builder.Services.ConfigureLavalink(options =>
 });
 
 var host = builder.Build();
-await host.RunAsync();
+await host.RunAsync();await host.RunAsync();
