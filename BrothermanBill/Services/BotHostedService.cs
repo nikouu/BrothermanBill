@@ -59,17 +59,26 @@ namespace BrothermanBill.Services
 
             _client.UserVoiceStateUpdated += async (user, before, after) =>
             {
-                var currentUser = _client.CurrentUser?.Username;
-                if (currentUser is null) return;
+                // Ignore the bot's own voice state changes
+                if (user.Id == _client.CurrentUser?.Id) return;
 
-                if (after.VoiceChannel is null && before.VoiceChannel?.Users.Any(x => x.Username == currentUser) == true)
+                var botUser = _client.CurrentUser;
+                if (botUser is null) return;
+
+                // Check if someone left or moved from the channel the bot is in
+                var leftChannel = before.VoiceChannel;
+                if (leftChannel is null) return;
+
+                // Is the bot in the channel the user just left?
+                var botInChannel = leftChannel.Users.Any(u => u.Id == botUser.Id);
+                if (!botInChannel) return;
+
+                // Is the bot the only one remaining?
+                var otherUsers = leftChannel.Users.Where(u => u.Id != botUser.Id);
+                if (!otherUsers.Any())
                 {
-                    var hasOtherUsers = before.VoiceChannel.Users.Any(x => x.Username != currentUser);
-                    if (!hasOtherUsers)
-                    {
-                        _logger.LogInformation("Leaving {Channel} as the last user, {User}, has left.", before.VoiceChannel.Name, user.Username);
-                        await before.VoiceChannel.DisconnectAsync();
-                    }
+                    _logger.LogInformation("Leaving {Channel} — no other users remaining.", leftChannel.Name);
+                    await leftChannel.DisconnectAsync();
                 }
             };
 
