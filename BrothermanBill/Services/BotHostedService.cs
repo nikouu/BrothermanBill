@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
+using System.Net.NetworkInformation;
 
 namespace BrothermanBill.Services
 {
@@ -19,6 +20,7 @@ namespace BrothermanBill.Services
         private readonly StatusService _statusService;
         private readonly AudioService _audioService;
         private readonly IAudioService _lavalinkAudioService;
+        private readonly ILogger _lavalinkLogger;
         private Process? _lavalinkProcess;
 
         public BotHostedService(
@@ -27,6 +29,7 @@ namespace BrothermanBill.Services
             InteractionHandlerService interactionHandler,
             IConfiguration config,
             ILogger<BotHostedService> logger,
+            ILoggerFactory loggerFactory,
             StatusService statusService,
             AudioService audioService,
             IAudioService lavalinkAudioService)
@@ -39,11 +42,19 @@ namespace BrothermanBill.Services
             _statusService = statusService;
             _audioService = audioService; // triggers DI construction & event subscription
             _lavalinkAudioService = lavalinkAudioService;
+            _lavalinkLogger = loggerFactory.CreateLogger("Lavalink"); // Lavalink's own stdout/stderr
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            StartLavalink();
+            try
+            {
+                StartLavalink();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to start Lavalink. Audio features will be unavailable.");
+            }
 
             _client.Log += msg =>
             {
@@ -77,8 +88,9 @@ namespace BrothermanBill.Services
                 var otherUsers = leftChannel.Users.Where(u => u.Id != botUser.Id);
                 if (!otherUsers.Any())
                 {
-                    _logger.LogInformation("Leaving {Channel} — no other users remaining.", leftChannel.Name);
+                    _logger.LogInformation("Leaving {Channel} ï¿½ no other users remaining.", leftChannel.Name);
                     await leftChannel.DisconnectAsync();
+                    await _statusService.SetReady();
                 }
             };
 
@@ -91,7 +103,7 @@ namespace BrothermanBill.Services
                     try
                     {
                         await _lavalinkAudioService.WaitForReadyAsync(CancellationToken.None).ConfigureAwait(false);
-                        await _statusService.SetStatus("Ready");
+                        await _statusService.SetReady();
                         _logger.LogInformation("Lavalink is ready.");
                     }
                     catch (Exception ex)
@@ -119,19 +131,40 @@ namespace BrothermanBill.Services
 
             if (_lavalinkProcess is { HasExited: false })
             {
-                _lavalinkProcess.Kill();
-                _lavalinkProcess.Dispose();
-                _lavalinkProcess = null;
-                _logger.LogInformation("Lavalink process terminated.");
+                try
+                {
+                    _lavalinkProcess.Kill(entireProcessTree: true);
+                    _logger.LogInformation("Lavalink process terminated.");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to terminate Lavalink process.");
+                }
             }
+
+            _lavalinkProcess?.Dispose();
+            _lavalinkProcess = null;
         }
+
+        private const int LavalinkPort = 2333;
 
         private void StartLavalink()
         {
-            var processList = Process.GetProcessesByName("java");
-            if (processList.Length > 0)
+            // In a container, Lavalink runs as its own Compose service, so the bot
+            // must not self-spawn it. The .NET base image sets this env var to "true".
+            if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true")
             {
-                _logger.LogInformation("Java process already running, skipping Lavalink launch.");
+                _logger.LogInformation("Running in a container; using external Lavalink, not self-spawning.");
+                return;
+            }
+
+            // Only skip if something is actually listening on the Lavalink port â€” not
+            // merely because *some* java process exists. The old "any java" check
+            // silently skipped launching whenever an unrelated (or orphaned) JVM was
+            // running, leaving the client talking to a stale/missing node.
+            if (IsPortInUse(LavalinkPort))
+            {
+                _logger.LogInformation("Port {Port} already in use; assuming Lavalink is already running, skipping launch.", LavalinkPort);
                 return;
             }
 
@@ -149,10 +182,50 @@ namespace BrothermanBill.Services
                 WorkingDirectory = Path.Combine(AppContext.BaseDirectory, "Lavalink"),
                 UseShellExecute = false,
                 CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
             };
 
-            _lavalinkProcess = Process.Start(processInfo);
-            _logger.LogInformation("Started Lavalink process.");
+            Process? process;
+            try
+            {
+                process = Process.Start(processInfo);
+            }
+            catch (System.ComponentModel.Win32Exception ex)
+            {
+                _logger.LogError(ex, "Could not start 'java'. Is Java 17+ installed and on PATH? Lavalink (and audio) will be unavailable.");
+                return;
+            }
+
+            if (process is null)
+            {
+                _logger.LogError("Failed to start Lavalink process.");
+                return;
+            }
+
+            _lavalinkProcess = process;
+
+            // Surface Lavalink's own output through our logger instead of swallowing it.
+            process.OutputDataReceived += (_, e) => { if (e.Data is not null) _lavalinkLogger.LogInformation("{Line}", e.Data); };
+            process.ErrorDataReceived += (_, e) => { if (e.Data is not null) _lavalinkLogger.LogError("{Line}", e.Data); };
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+
+            // Tie Lavalink's lifetime to ours so a hard kill (e.g. stopping the VS
+            // debugger, which skips StopAsync) can't leave an orphan holding the port.
+            if (OperatingSystem.IsWindows() && !ChildProcessTracker.AddProcess(process))
+            {
+                _logger.LogWarning("Could not register Lavalink with the kill-on-exit job object; it may linger if the bot is force-killed.");
+            }
+
+            _logger.LogInformation("Started Lavalink process (PID {Pid}).", process.Id);
+        }
+
+        private static bool IsPortInUse(int port)
+        {
+            return IPGlobalProperties.GetIPGlobalProperties()
+                .GetActiveTcpListeners()
+                .Any(endpoint => endpoint.Port == port);
         }
     }
 }

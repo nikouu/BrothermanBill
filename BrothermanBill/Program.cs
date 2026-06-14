@@ -35,7 +35,9 @@ builder.Services.AddHostedService<BotHostedService>();
 builder.Services.AddLavalink();
 builder.Services.ConfigureLavalink(options =>
 {
-    options.BaseAddress = new Uri("http://localhost:2333");
+    // Default targets the self-spawned dev node; overridden in the container via
+    // the env var Lavalink__Address=http://lavalink:2333
+    options.BaseAddress = new Uri(builder.Configuration["Lavalink:Address"] ?? "http://localhost:2333");
     options.Passphrase = "youshallnotpass";
 });
 

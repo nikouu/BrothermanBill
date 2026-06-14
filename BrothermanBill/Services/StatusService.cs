@@ -20,5 +20,11 @@ namespace BrothermanBill.Services
             _logger.LogInformation($"Setting status to {status}");
             await _socketClient.SetActivityAsync(new Game(status));
         }
+
+        /// <summary>The status shown whenever the bot is connected but idle (not playing).</summary>
+        public const string ReadyStatus = "Ready";
+
+        /// <summary>Sets the idle "Ready" status. Used anytime playback stops or the bot disconnects.</summary>
+        public Task SetReady() => SetStatus(ReadyStatus);
     }
 }

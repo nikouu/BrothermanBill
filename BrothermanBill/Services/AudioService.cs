@@ -53,7 +53,7 @@ namespace BrothermanBill.Services
             if (args.Player is IQueuedLavalinkPlayer queuedPlayer && queuedPlayer.Queue.Count == 0)
             {
                 _logger.LogInformation("Queue completed.");
-                await _statusService.SetStatus(null);
+                await _statusService.SetReady();
             }
         }
 
@@ -69,10 +69,11 @@ namespace BrothermanBill.Services
             return Task.CompletedTask;
         }
 
-        private Task OnWebSocketClosed(object sender, WebSocketClosedEventArgs args)
+        private async Task OnWebSocketClosed(object sender, WebSocketClosedEventArgs args)
         {
             _logger.LogCritical("Discord WebSocket connection closed with following reason: {Reason}", args.Reason);
-            return Task.CompletedTask;
+            // Voice connection dropped — fall back to idle.
+            await _statusService.SetReady();
         }
     }
 }

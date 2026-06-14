@@ -83,6 +83,7 @@ namespace BrothermanBill.Modules
             if (player is null) return;
 
             await player.DisconnectAsync();
+            await _statusService.SetReady();
             await FollowupAsync(":(");
         }
 
@@ -266,7 +267,7 @@ namespace BrothermanBill.Modules
             await player.Queue.ClearAsync();
             await player.StopAsync();
             _logger.LogInformation("Stopped and cleared queue.");
-            await _statusService.SetStatus(null);
+            await _statusService.SetReady();
             await FollowupAsync("Stopped and cleared queue.");
         }
 
@@ -288,7 +289,7 @@ namespace BrothermanBill.Modules
                 await player.Queue.ClearAsync();
                 await player.StopAsync();
                 _logger.LogInformation("Stopped and cleared queue.");
-                await _statusService.SetStatus(null);
+                await _statusService.SetReady();
                 await FollowupAsync("Stopped and cleared queue.");
                 return;
             }

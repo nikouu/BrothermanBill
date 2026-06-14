@@ -1,0 +1,18 @@
+services:
+  lavalink:
+    image: ghcr.io/lavalink-devs/lavalink:4.2.2
+    restart: unless-stopped
+    volumes:
+      - ./application.yml:/opt/Lavalink/application.yml:ro
+    expose:
+      - "2333" # reachable only on the internal Compose network
+
+  bot:
+    image: brothermanbill:latest
+    restart: unless-stopped
+    depends_on:
+      - lavalink
+    env_file:
+      - .env #has Discord bot token
+    environment:
+      - Lavalink__Address=http://lavalink:2333

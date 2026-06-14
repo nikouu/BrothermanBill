@@ -82,6 +82,36 @@ dotnet build
 - `./install.sh` — install as a service (runs on boot)
 - `./uninstall.sh` — remove the service
 
+### Deploying to Ubuntu with Docker
+
+Runs as two containers (the bot + official Lavalink) via Docker Compose, the main dev machine with a single script over SSH. Debugging with Visual Studio continues to spawn the child Lavalink process.
+
+**One-time server setup:**
+```bash
+sudo mkdir -p /opt/brothermanbill
+sudo chown "$USER:$USER" /opt/brothermanbill
+printf 'DiscordBotToken=YOUR_TOKEN\n' > /opt/brothermanbill/.env
+chmod 600 /opt/brothermanbill/.env
+sudo usermod -aG docker "$USER"
+```
+The Discord bot token lives only in `.env` on the server
+
+**Deploy (from the dev machine, repeatable):**
+```
+./deploy.ps1
+```
+It prompts for the server host and SSH user (remote path defaults to `/opt/brothermanbill`), then: builds the image, `scp`s the tarball + `docker-compose.yml` + `application.yml` to the server, `docker load`s and `docker compose up -d`s over SSH, and removes the tarball locally and remotely.
+
+Note: Assumes key-based SSH.
+
+**Manage (on the server):**
+```
+docker compose logs -f bot     # follow logs
+docker compose down            # stop and remove both containers
+```
+
+To upgrade Lavalink later, bump the `ghcr.io/lavalink-devs/lavalink` tag in `docker-compose.yml` (keep `application.yml`'s `youtube-plugin` version in step), then redeploy.
+
 ## 🧱Dependencies
 - [Discord.Net](https://github.com/discord-net/Discord.Net)
 - [Lavalink4NET](https://github.com/angelobreuer/Lavalink4NET)

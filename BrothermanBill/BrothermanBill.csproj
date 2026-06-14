@@ -9,6 +9,9 @@
 	<IncludeAllContentForSelfExtract>true</IncludeAllContentForSelfExtract>
     <UserSecretsId>d8ac7fb1-cc77-4f55-a2cf-b49d4f8cc4db</UserSecretsId>
 	<GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <!-- Native container publish (dotnet publish /t:PublishContainer); ignored by normal builds -->
+    <ContainerRepository>brothermanbill</ContainerRepository>
+    <ContainerBaseImage>mcr.microsoft.com/dotnet/runtime:8.0</ContainerBaseImage>
   </PropertyGroup>
 
   <ItemGroup>
@@ -35,6 +38,9 @@
     <None Update="Lavalink\Lavalink.jar">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <!-- The container talks to a separate Lavalink service, so the ~100 MB jar is
+         dropped from container publishes. Local dev still copies it (flag unset). -->
+    <None Remove="Lavalink\Lavalink.jar" Condition="'$(ExcludeLavalinkJar)' == 'true'" />
     <None Update="opus.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
