@@ -88,9 +88,34 @@ namespace BrothermanBill.Services
                 var otherUsers = leftChannel.Users.Where(u => u.Id != botUser.Id);
                 if (!otherUsers.Any())
                 {
-                    _logger.LogInformation("Leaving {Channel} � no other users remaining.", leftChannel.Name);
-                    await leftChannel.DisconnectAsync();
-                    await _statusService.SetReady();
+                    _logger.LogInformation("{Channel} is empty - leaving in 10s if still empty.", leftChannel.Name);
+
+                    // Defer so we don't block the gateway, then re-check after the grace period.
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await Task.Delay(TimeSpan.FromSeconds(10));
+
+                            var stillEmpty = !leftChannel.Users.Any(u => u.Id != botUser.Id);
+                            var botStillConnected = leftChannel.Users.Any(u => u.Id == botUser.Id);
+
+                            if (stillEmpty && botStillConnected)
+                            {
+                                _logger.LogInformation("Leaving {Channel} - still empty after 10s.", leftChannel.Name);
+                                await leftChannel.DisconnectAsync();
+                                await _statusService.SetReady();
+                            }
+                            else
+                            {
+                                _logger.LogInformation("Staying in {Channel} - someone rejoined within 10s.", leftChannel.Name);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error during delayed leave of {Channel}.", leftChannel.Name);
+                        }
+                    });
                 }
             };
 
