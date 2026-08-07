@@ -418,11 +418,7 @@ namespace BrothermanBill.Modules
 
                 if (loadResult.Playlist is not null && loadResult.Tracks.Length > 1)
                 {
-                    foreach (var t in loadResult.Tracks)
-                    {
-                        await player.PlayAsync(t);
-                    }
-                    await FollowupAsync($"Enqueued {loadResult.Tracks.Length} songs.");
+                    await HandlePlaylist(player, loadResult.Tracks, playImmediately);
                     return;
                 }
             }
@@ -459,6 +455,44 @@ namespace BrothermanBill.Modules
                     await FollowupAsync(text: "Queued:", embed: embed);
                 }
             }
+        }
+
+        private async Task HandlePlaylist(ResumableQueuedPlayer player, IReadOnlyList<LavalinkTrack> tracks, bool playImmediately)
+        {
+            var interrupt = playImmediately || (player.CurrentTrack?.IsLiveStream ?? false);
+
+            if (!interrupt || player.CurrentTrack is null)
+            {
+                foreach (var track in tracks)
+                {
+                    await player.PlayAsync(track);
+                }
+
+                await FollowupAsync($"Enqueued {tracks.Count} songs.");
+                return;
+            }
+
+            if (player.State == PlayerState.Paused)
+            {
+                await player.ResumeAsync();
+            }
+
+            // Park the interrupted track so it resumes once the playlist finishes...
+            if (!player.CurrentTrack.IsLiveStream)
+            {
+                var resumePosition = player.Position?.Position ?? TimeSpan.Zero;
+                await player.Queue.InsertAsync(0, new ResumableTrackQueueItem(player.CurrentTrack, resumePosition));
+            }
+
+            // ...then put the rest of the playlist in front of it, keeping playlist order.
+            for (var i = 1; i < tracks.Count; i++)
+            {
+                await player.Queue.InsertAsync(i - 1, new ResumableTrackQueueItem(tracks[i], TimeSpan.Zero));
+            }
+
+            await player.PlayAsync(tracks[0], enqueue: false);
+
+            await FollowupAsync($"Playing {tracks.Count} songs now.");
         }
 
         private async Task PlayTrackImmediately(ResumableQueuedPlayer player, LavalinkTrack track, TrackPlayProperties properties)
