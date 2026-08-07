@@ -23,13 +23,8 @@ namespace BrothermanBill.Modules
         private readonly MemeService _memeService;
         private readonly StatusService _statusService;
 
-        // "%s", not "s": a single-character format string is read as a *standard*
-        // specifier, and "s" is not one, so a bare "s" rejects every single-digit
-        // input ("/seek 5"). The "%" marks it as a custom specifier.
         private static readonly string[] TimeFormats =
         {
-            @"%s",
-            @"ss",
             @"m\:ss",
             @"mm\:ss",
             @"h\:mm\:ss"
@@ -178,8 +173,8 @@ namespace BrothermanBill.Modules
             await FollowupAsync($"Paused: {player.CurrentTrack?.Title}");
         }
 
-        [SlashCommand("seek", "Seeks with a given time. Formats: \"ss\", \"mm:ss\", \"h:mm:ss\". Can be negative.")]
-        public async Task Seek([Summary(description: "Time to seek by (e.g. 30, -1:00, 1:30:00)")] string time)
+        [SlashCommand("seek", "Seeks by a given time. Formats: seconds, \"mm:ss\", \"h:mm:ss\". Can be negative.")]
+        public async Task Seek([Summary(description: "Time to seek by (e.g. 300, -1:00, 1:30:00)")] string time)
         {
             await DeferAsync();
             var player = await GetPlayerAsync(false);
@@ -194,7 +189,7 @@ namespace BrothermanBill.Modules
 
             var isNegative = time.StartsWith("-");
 
-            if (!TimeSpan.TryParseExact(time.Replace("-", ""), TimeFormats, CultureInfo.InvariantCulture, out TimeSpan duration))
+            if (!TryParseSeekTime(time.Replace("-", ""), out var duration))
             {
                 await FollowupAsync("Invalid time format.");
                 return;
@@ -219,8 +214,8 @@ namespace BrothermanBill.Modules
             }
         }
 
-        [SlashCommand("seekto", "Seeks to a given time. Formats: \"ss\", \"mm:ss\", \"h:mm:ss\".")]
-        public async Task SeekTo([Summary(description: "Time to seek to (e.g. 30, 1:00, 1:30:00)")] string time)
+        [SlashCommand("seekto", "Seeks to a given time. Formats: seconds, \"mm:ss\", \"h:mm:ss\".")]
+        public async Task SeekTo([Summary(description: "Time to seek to (e.g. 300, 1:00, 1:30:00)")] string time)
         {
             await DeferAsync();
             var player = await GetPlayerAsync(false);
@@ -233,7 +228,7 @@ namespace BrothermanBill.Modules
                 return;
             }
 
-            if (!TimeSpan.TryParseExact(time, TimeFormats, CultureInfo.InvariantCulture, out TimeSpan duration))
+            if (!TryParseSeekTime(time, out var duration))
             {
                 await FollowupAsync("Invalid time format.");
                 return;
@@ -495,6 +490,23 @@ namespace BrothermanBill.Modules
 
             var durationStringFormat = duration.TotalHours >= 1 ? @"hh\:mm\:ss" : @"mm\:ss";
             return $"{position.ToString(durationStringFormat)}/{duration.ToString(durationStringFormat)}";
+        }
+
+        /// <summary>
+        /// Parses a seek time. A bare number is total seconds; otherwise "m:ss",
+        /// "mm:ss" or "h:mm:ss".
+        /// </summary>
+        private static bool TryParseSeekTime(string time, out TimeSpan duration)
+        {
+            // Total seconds first. The "ss" specifier caps at 59, so anything larger
+            // ("/seek 300") matches no format and would otherwise be rejected.
+            if (int.TryParse(time, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds))
+            {
+                duration = TimeSpan.FromSeconds(seconds);
+                return true;
+            }
+
+            return TimeSpan.TryParseExact(time, TimeFormats, CultureInfo.InvariantCulture, out duration);
         }
 
         private TimeSpan GetUrlParameterTime(string searchQuery)

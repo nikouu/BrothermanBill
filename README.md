@@ -18,8 +18,9 @@ Brotherman Bill (aka BrothermanBill) came from the need to fill Discord rooms wi
 	- `/pause` / `/resume` — pause and resume playback
 	- `/stop` — stop playback
 	- `/skip` — skip to the next song in the queue
-	- `/seek <time>` — seek by relative offset (e.g. `30`, `-1:00`)
-	- `/seekto <time>` — seek to an absolute position
+	- `/seek <time>` — seek by a relative offset (e.g. `300`, `-1:00`, `1:30:00`)
+	- `/seekto <time>` — seek to an absolute position (e.g. `300`, `1:00`, `1:30:00`)
+		- Both accept a plain number of seconds, `mm:ss`, or `h:mm:ss`. Only `/seek` accepts a negative value.
 	- `/nowplaying` (`/np`) — show currently playing track with artwork
 	- `/queue [full]` — show the queue (10 items by default, or full)
 	- `/clearqueue` — clear the queue
