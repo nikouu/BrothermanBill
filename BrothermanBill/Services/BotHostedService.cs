@@ -56,17 +56,8 @@ namespace BrothermanBill.Services
                 _logger.LogError(ex, "Failed to start Lavalink. Audio features will be unavailable.");
             }
 
-            _client.Log += msg =>
-            {
-                _logger.LogInformation("{Message}", msg.ToString());
-                return Task.CompletedTask;
-            };
-
-            _interactions.Log += msg =>
-            {
-                _logger.LogInformation("{Message}", msg.ToString());
-                return Task.CompletedTask;
-            };
+            _client.Log += LogDiscordMessage;
+            _interactions.Log += LogDiscordMessage;
 
             _client.UserVoiceStateUpdated += async (user, before, after) =>
             {
@@ -173,6 +164,30 @@ namespace BrothermanBill.Services
 
             _lavalinkProcess?.Dispose();
             _lavalinkProcess = null;
+        }
+
+        /// <summary>
+        /// Forwards a Discord.Net log message at its own severity. Logging everything at
+        /// Information hid every warning and error the library raised, including the
+        /// exceptions thrown inside deferred slash commands.
+        /// </summary>
+        private Task LogDiscordMessage(LogMessage message)
+        {
+            var level = message.Severity switch
+            {
+                LogSeverity.Critical => LogLevel.Critical,
+                LogSeverity.Error => LogLevel.Error,
+                LogSeverity.Warning => LogLevel.Warning,
+                LogSeverity.Info => LogLevel.Information,
+                LogSeverity.Verbose => LogLevel.Trace,
+                LogSeverity.Debug => LogLevel.Debug,
+                _ => LogLevel.Information
+            };
+
+            // Pass the exception separately so it keeps its stack trace instead of being
+            // flattened into the message by LogMessage.ToString().
+            _logger.Log(level, message.Exception, "[{Source}] {Message}", message.Source, message.Message);
+            return Task.CompletedTask;
         }
 
         private const int LavalinkPort = 2333;
