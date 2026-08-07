@@ -7,32 +7,30 @@ namespace BrothermanBill
     {
         private Color MusicColour => Color.DarkPurple;
 
-        public async Task<Embed> CreatePlayEmbed(string title, string artist, string url, string art)
+        public Embed CreatePlayEmbed(string title, string artist, string url, string art)
         {
-            var embed = await Task.Run(() => new EmbedBuilder()
+            return new EmbedBuilder()
                 .WithTitle(title)
                 .WithDescription(artist)
                 .WithColor(MusicColour)
                 .WithUrl(url)
                 .WithThumbnailUrl(art)
-                .Build());
-            return embed;
+                .Build();
         }
 
-        public async Task<Embed> CreateNowPlayingEmbed(string title, string artist, string url, string art, string duration)
+        public Embed CreateNowPlayingEmbed(string title, string artist, string url, string art, string duration)
         {
-            var embed = await Task.Run(() => new EmbedBuilder()
+            return new EmbedBuilder()
                 .WithTitle(title)
                 .WithDescription(artist)
                 .WithColor(MusicColour)
                 .WithUrl(url)
                 .WithImageUrl(art)
                 .WithFooter(duration)
-                .Build());
-            return embed;
+                .Build();
         }
 
-        public async Task<Embed> CreateQueueEmbed(string nowPlaying, IEnumerable<string> queue, bool printFullQueue = false)
+        public Embed CreateQueueEmbed(string nowPlaying, IEnumerable<string> queue, bool printFullQueue = false)
         {
             const int maxQueueDisplay = 10;
             // Headroom for the trailing "and N more" line.
@@ -92,11 +90,10 @@ namespace BrothermanBill
                 description = description[..EmbedBuilder.MaxDescriptionLength];
             }
 
-            var embed = await Task.Run(() => new EmbedBuilder()
+            return new EmbedBuilder()
                 .WithColor(MusicColour)
                 .WithDescription(description)
-                .Build());
-            return embed;
+                .Build();
         }
     }
 }

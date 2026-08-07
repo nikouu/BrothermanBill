@@ -339,7 +339,7 @@ namespace BrothermanBill.Modules
 
             var art = track.ArtworkUri?.ToString() ?? "";
             var duration = track.IsLiveStream ? "Live stream" : CreateDurationString(player);
-            var embed = await _embedHandler.CreateNowPlayingEmbed(track.Title, track.Author, track.Uri?.ToString() ?? "", art, duration);
+            var embed = _embedHandler.CreateNowPlayingEmbed(track.Title, track.Author, track.Uri?.ToString() ?? "", art, duration);
 
             await FollowupAsync(text: "Now playing:", embed: embed);
         }
@@ -358,7 +358,7 @@ namespace BrothermanBill.Modules
             var nowPlaying = player.CurrentTrack?.Title ?? "";
             var queue = player.Queue.Select(x => x.Track?.Title ?? "Unknown");
             var displayFullQueue = command.ToLower() == "full";
-            var embed = await _embedHandler.CreateQueueEmbed(nowPlaying, queue, displayFullQueue);
+            var embed = _embedHandler.CreateQueueEmbed(nowPlaying, queue, displayFullQueue);
 
             await FollowupAsync(text: player.CurrentTrack is null
                 ? "Nothing is playing."
@@ -456,7 +456,7 @@ namespace BrothermanBill.Modules
                 else
                 {
                     var art = track.ArtworkUri?.ToString() ?? "";
-                    var embed = await _embedHandler.CreatePlayEmbed(track.Title, track.Author, track.Uri?.ToString() ?? "", art);
+                    var embed = _embedHandler.CreatePlayEmbed(track.Title, track.Author, track.Uri?.ToString() ?? "", art);
                     await FollowupAsync(text: "Queued:", embed: embed);
                 }
             }
@@ -527,7 +527,7 @@ namespace BrothermanBill.Modules
         private async Task HandleNextTrackComment(LavalinkTrack track)
         {
             var art = track.ArtworkUri?.ToString() ?? "";
-            var embed = await _embedHandler.CreatePlayEmbed(track.Title, track.Author, track.Uri?.ToString() ?? "", art);
+            var embed = _embedHandler.CreatePlayEmbed(track.Title, track.Author, track.Uri?.ToString() ?? "", art);
 
             _logger.LogInformation("Playing now: {Title}", track.Title);
             await FollowupAsync(text: "Playing now:", embed: embed);
