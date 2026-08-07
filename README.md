@@ -40,7 +40,7 @@ Brotherman Bill (aka BrothermanBill) came from the need to fill Discord rooms wi
 ## Setup
 
 ### .NET
-Requires [.NET 8 or higher](https://dotnet.microsoft.com/en-us/download).
+Requires [.NET 10 or higher](https://dotnet.microsoft.com/en-us/download).
 
 ### Build
 ```
