@@ -35,9 +35,14 @@ namespace BrothermanBill.Modules
         [SlashCommand("pick", "Randomly selects a word from a list of space separated words.")]
         public async Task Pick([Summary(description: "Space separated list of words")] string list)
         {
-            var games = list.Split(" ");
-            var game = games[Random.Shared.Next(games.Length)];
-            await RespondAsync(game);
+            var games = list.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (games.Length == 0)
+            {
+                await RespondAsync("Give me a space separated list of words to pick from.");
+                return;
+            }
+
+            await RespondAsync(games[Random.Shared.Next(games.Length)]);
         }
 
         [SlashCommand("uptime", "Current Brotherman Bill uptime.")]
