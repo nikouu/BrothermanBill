@@ -87,8 +87,9 @@ namespace BrothermanBill.Services
                 var player = await _lavalinkAudioService.Players.GetPlayerAsync(leftChannel.Guild.Id);
                 if (player is null || player.VoiceChannelId != leftChannel.Id) return;
 
-                // Anyone left besides the bot?
-                var humansRemaining = leftChannel.Users.Any(u => u.Id != botUser.Id);
+                // ConnectedUsers, not Users. SocketVoiceChannel inherits Users from
+                // SocketTextChannel, where it means "everyone who can view the channel"
+                var humansRemaining = leftChannel.ConnectedUsers.Any(u => u.Id != botUser.Id);
                 if (humansRemaining) return;
 
                 _logger.LogInformation("{Channel} is empty - leaving in 10s if still empty.", leftChannel.Name);
@@ -102,7 +103,7 @@ namespace BrothermanBill.Services
 
                         var currentPlayer = await _lavalinkAudioService.Players.GetPlayerAsync(leftChannel.Guild.Id);
                         var botStillConnected = currentPlayer is not null && currentPlayer.VoiceChannelId == leftChannel.Id;
-                        var stillEmpty = !leftChannel.Users.Any(u => u.Id != botUser.Id);
+                        var stillEmpty = !leftChannel.ConnectedUsers.Any(u => u.Id != botUser.Id);
 
                         if (botStillConnected && stillEmpty)
                         {

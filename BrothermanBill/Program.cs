@@ -42,4 +42,4 @@ builder.Services.ConfigureLavalink(options =>
 });
 
 var host = builder.Build();
-await host.RunAsync();await host.RunAsync();
+await host.RunAsync();
