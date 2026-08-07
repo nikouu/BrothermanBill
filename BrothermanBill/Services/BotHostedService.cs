@@ -70,53 +70,56 @@ namespace BrothermanBill.Services
 
             _client.UserVoiceStateUpdated += async (user, before, after) =>
             {
-                // Ignore the bot's own voice state changes
-                if (user.Id == _client.CurrentUser?.Id) return;
-
                 var botUser = _client.CurrentUser;
                 if (botUser is null) return;
 
-                // Check if someone left or moved from the channel the bot is in
+                // Ignore the bot's own voice state changes
+                if (user.Id == botUser.Id) return;
+
+                // Someone left or moved out of this channel
                 var leftChannel = before.VoiceChannel;
                 if (leftChannel is null) return;
 
-                // Is the bot in the channel the user just left?
-                var botInChannel = leftChannel.Users.Any(u => u.Id == botUser.Id);
-                if (!botInChannel) return;
+                // Ask Lavalink (the layer that actually owns the connection) whether the
+                // bot is connected in this guild, and to which channel. Discord.Net's
+                // cached voice states can't be trusted here because Lavalink4NET makes
+                // the voice connection directly.
+                var player = await _lavalinkAudioService.Players.GetPlayerAsync(leftChannel.Guild.Id);
+                if (player is null || player.VoiceChannelId != leftChannel.Id) return;
 
-                // Is the bot the only one remaining?
-                var otherUsers = leftChannel.Users.Where(u => u.Id != botUser.Id);
-                if (!otherUsers.Any())
+                // Anyone left besides the bot?
+                var humansRemaining = leftChannel.Users.Any(u => u.Id != botUser.Id);
+                if (humansRemaining) return;
+
+                _logger.LogInformation("{Channel} is empty - leaving in 10s if still empty.", leftChannel.Name);
+
+                // Defer so we don't block the gateway, then re-check after the grace period.
+                _ = Task.Run(async () =>
                 {
-                    _logger.LogInformation("{Channel} is empty - leaving in 10s if still empty.", leftChannel.Name);
-
-                    // Defer so we don't block the gateway, then re-check after the grace period.
-                    _ = Task.Run(async () =>
+                    try
                     {
-                        try
-                        {
-                            await Task.Delay(TimeSpan.FromSeconds(10));
+                        await Task.Delay(TimeSpan.FromSeconds(10));
 
-                            var stillEmpty = !leftChannel.Users.Any(u => u.Id != botUser.Id);
-                            var botStillConnected = leftChannel.Users.Any(u => u.Id == botUser.Id);
+                        var currentPlayer = await _lavalinkAudioService.Players.GetPlayerAsync(leftChannel.Guild.Id);
+                        var botStillConnected = currentPlayer is not null && currentPlayer.VoiceChannelId == leftChannel.Id;
+                        var stillEmpty = !leftChannel.Users.Any(u => u.Id != botUser.Id);
 
-                            if (stillEmpty && botStillConnected)
-                            {
-                                _logger.LogInformation("Leaving {Channel} - still empty after 10s.", leftChannel.Name);
-                                await leftChannel.DisconnectAsync();
-                                await _statusService.SetReady();
-                            }
-                            else
-                            {
-                                _logger.LogInformation("Staying in {Channel} - someone rejoined within 10s.", leftChannel.Name);
-                            }
-                        }
-                        catch (Exception ex)
+                        if (botStillConnected && stillEmpty)
                         {
-                            _logger.LogError(ex, "Error during delayed leave of {Channel}.", leftChannel.Name);
+                            _logger.LogInformation("Leaving {Channel} - still empty after 10s.", leftChannel.Name);
+                            await currentPlayer!.DisconnectAsync();
+                            await _statusService.SetReady();
                         }
-                    });
-                }
+                        else
+                        {
+                            _logger.LogInformation("Staying in {Channel} - someone rejoined within 10s or already disconnected.", leftChannel.Name);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error during delayed leave of {Channel}.", leftChannel.Name);
+                    }
+                });
             };
 
             _client.Ready += async () =>

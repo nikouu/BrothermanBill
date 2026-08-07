@@ -34,9 +34,6 @@ namespace BrothermanBill.Modules
 
         private async ValueTask<ResumableQueuedPlayer?> GetPlayerAsync(bool connectToVoiceChannel = true)
         {
-            using var cts = new CancellationTokenSource(millisecondsDelay: 30000);
-            await _audioService.WaitForReadyAsync(cts.Token).ConfigureAwait(false);
-
             var retrieveOptions = new PlayerRetrieveOptions(
                 ChannelBehavior: connectToVoiceChannel ? PlayerChannelBehavior.Join : PlayerChannelBehavior.None);
 
@@ -45,8 +42,30 @@ namespace BrothermanBill.Modules
             var playerFactory = PlayerFactory.Create<ResumableQueuedPlayer, QueuedLavalinkPlayerOptions>(
                 properties => new ResumableQueuedPlayer(properties));
 
-            var result = await _audioService.Players
-                .RetrieveAsync(Context.Guild.Id, voiceState?.VoiceChannel?.Id, playerFactory, Options.Create(new QueuedLavalinkPlayerOptions()), retrieveOptions);
+            PlayerResult<ResumableQueuedPlayer> result;
+            try
+            {
+                using var cts = new CancellationTokenSource(millisecondsDelay: 30000);
+                await _audioService.WaitForReadyAsync(cts.Token).ConfigureAwait(false);
+
+                result = await _audioService.Players
+                    .RetrieveAsync(Context.Guild.Id, voiceState?.VoiceChannel?.Id, playerFactory, Options.Create(new QueuedLavalinkPlayerOptions()), retrieveOptions);
+            }
+            catch (OperationCanceledException exception)
+            {
+                // WaitForReadyAsync timed out: the Lavalink node isn't reachable/ready.
+                _logger.LogError(exception, "Timed out waiting for the audio service to be ready.");
+                await FollowupAsync("The audio service isn't responding right now. Try again in a moment.");
+                return null;
+            }
+            catch (Exception exception)
+            {
+                // Any other failure (e.g. voice connection wedged) would otherwise leave
+                // the deferred interaction hanging with no response at all.
+                _logger.LogError(exception, "Failed to retrieve the audio player.");
+                await FollowupAsync("Something went wrong connecting to voice. Try again in a moment.");
+                return null;
+            }
 
             if (!result.IsSuccess)
             {
