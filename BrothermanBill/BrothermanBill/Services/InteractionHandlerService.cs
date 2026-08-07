@@ -14,6 +14,7 @@ namespace BrothermanBill.Services
         private readonly ILogger _logger;
 
         private bool _initialized;
+        private bool _commandsRegistered;
 
         public InteractionHandlerService(DiscordSocketClient client, InteractionService interactions, IServiceProvider services, ILogger<InteractionHandlerService> logger)
         {
@@ -34,8 +35,23 @@ namespace BrothermanBill.Services
 
             _client.Ready += async () =>
             {
-                await _interactions.RegisterCommandsGloballyAsync();
-                _logger.LogInformation("Slash commands registered globally.");
+                // Ready fires again on every gateway reconnect. Latch only on success,
+                // so a failed registration still retries on the next one.
+                if (_commandsRegistered)
+                {
+                    return;
+                }
+
+                try
+                {
+                    await _interactions.RegisterCommandsGloballyAsync();
+                    _commandsRegistered = true;
+                    _logger.LogInformation("Slash commands registered globally.");
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogError(exception, "Failed to register slash commands. Retrying on the next reconnect.");
+                }
             };
         }
 
