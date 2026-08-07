@@ -23,6 +23,18 @@ namespace BrothermanBill.Modules
         private readonly MemeService _memeService;
         private readonly StatusService _statusService;
 
+        // "%s", not "s": a single-character format string is read as a *standard*
+        // specifier, and "s" is not one, so a bare "s" rejects every single-digit
+        // input ("/seek 5"). The "%" marks it as a custom specifier.
+        private static readonly string[] TimeFormats =
+        {
+            @"%s",
+            @"ss",
+            @"m\:ss",
+            @"mm\:ss",
+            @"h\:mm\:ss"
+        };
+
         public AudioModule(IAudioService audioService, MemeService memeService, EmbedHandler embedHandler, ILogger<AudioModule> logger, StatusService statusService)
         {
             _audioService = audioService;
@@ -182,15 +194,7 @@ namespace BrothermanBill.Modules
 
             var isNegative = time.StartsWith("-");
 
-            var formats = new[] {
-                @"s",
-                @"ss",
-                @"m\:ss",
-                @"mm\:ss",
-                @"h\:mm\:ss"
-            };
-
-            if (!TimeSpan.TryParseExact(time.Replace("-", ""), formats, CultureInfo.CurrentCulture, out TimeSpan duration))
+            if (!TimeSpan.TryParseExact(time.Replace("-", ""), TimeFormats, CultureInfo.InvariantCulture, out TimeSpan duration))
             {
                 await FollowupAsync("Invalid time format.");
                 return;
@@ -229,15 +233,7 @@ namespace BrothermanBill.Modules
                 return;
             }
 
-            var formats = new[] {
-                @"s",
-                @"ss",
-                @"m\:ss",
-                @"mm\:ss",
-                @"h\:mm\:ss"
-            };
-
-            if (!TimeSpan.TryParseExact(time, formats, CultureInfo.CurrentCulture, out TimeSpan duration))
+            if (!TimeSpan.TryParseExact(time, TimeFormats, CultureInfo.InvariantCulture, out TimeSpan duration))
             {
                 await FollowupAsync("Invalid time format.");
                 return;
