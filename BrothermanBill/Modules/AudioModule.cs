@@ -348,8 +348,8 @@ namespace BrothermanBill.Modules
         public async Task NpAsync()
             => await NowPlayingAsync();
 
-        [SlashCommand("queue", "Displays the current queue. Use \"full\" for the entire queue.")]
-        public async Task QueueAsync([Summary(description: "Use \"full\" to see the entire queue")] string command = "")
+        [SlashCommand("queue", "Displays the current queue.")]
+        public async Task QueueAsync([Summary(description: "Show the whole queue instead of the first 10")] bool full = false)
         {
             await DeferAsync();
             var player = await GetPlayerAsync(false);
@@ -357,8 +357,7 @@ namespace BrothermanBill.Modules
 
             var nowPlaying = player.CurrentTrack?.Title ?? "";
             var queue = player.Queue.Select(x => x.Track?.Title ?? "Unknown");
-            var displayFullQueue = command.ToLower() == "full";
-            var embed = _embedHandler.CreateQueueEmbed(nowPlaying, queue, displayFullQueue);
+            var embed = _embedHandler.CreateQueueEmbed(nowPlaying, queue, full);
 
             await FollowupAsync(text: player.CurrentTrack is null
                 ? "Nothing is playing."

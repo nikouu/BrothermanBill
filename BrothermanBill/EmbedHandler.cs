@@ -80,7 +80,7 @@ namespace BrothermanBill
                 {
                     stringBuilder.AppendLine(shown < limit
                         ? $"*and {remaining} more... too many to display*"
-                        : $"*and {remaining} more... use /queue full*");
+                        : $"*and {remaining} more... set full:True to see them all*");
                 }
             }
 

@@ -22,7 +22,7 @@ Brotherman Bill (aka BrothermanBill) came from the need to fill Discord rooms wi
 	- `/seekto <time>` — seek to an absolute position (e.g. `300`, `1:00`, `1:30:00`)
 		- Both accept a plain number of seconds, `mm:ss`, or `h:mm:ss`. Only `/seek` accepts a negative value.
 	- `/nowplaying` (`/np`) — show currently playing track with artwork
-	- `/queue [full]` — show the queue (10 items by default, or full)
+	- `/queue [full]` — show the queue (10 items by default; set `full` to show every track)
 	- `/clearqueue` — clear the queue
 	- `/join` / `/leave` — join or leave a voice channel
 	- Auto-disconnects when the last user leaves the voice channel
