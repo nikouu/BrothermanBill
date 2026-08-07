@@ -32,7 +32,6 @@ Brotherman Bill (aka BrothermanBill) came from the need to fill Discord rooms wi
 	- `/ping` — latency to Discord servers
 	- `/uptime` — bot uptime
 	- `/setgame <status>` — set the bot's Discord status
-	- `/restart` — restart the bot (Linux/Pi only)
 	- `/kkona` — posts the KKona emote
 	- `/cum` — health check
 	- `/pick <words>` — randomly pick one word from a space-separated list
