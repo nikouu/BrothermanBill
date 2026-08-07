@@ -392,7 +392,9 @@ namespace BrothermanBill.Modules
             }
 
             _logger.LogInformation("No meme sound clip for {Meme}.", meme);
-            await FollowupAsync($"No meme sound clip found for `{meme}`.");
+            await FollowupAsync(string.IsNullOrWhiteSpace(meme)
+                ? "Couldn't find a meme to play. Try again in a moment."
+                : $"No meme sound clip found for `{meme}`.");
         }
 
         private async Task HandlePlay(string searchQuery, bool playImmediately)
