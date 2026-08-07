@@ -510,17 +510,79 @@ namespace BrothermanBill.Modules
             return TimeSpan.TryParseExact(time, TimeFormats, CultureInfo.InvariantCulture, out duration);
         }
 
-        private TimeSpan GetUrlParameterTime(string searchQuery)
+        private static TimeSpan GetUrlParameterTime(string searchQuery)
         {
             if (!Uri.TryCreate(searchQuery, UriKind.Absolute, out var uri))
+            {
                 return TimeSpan.Zero;
+            }
 
             var queryString = HttpUtility.ParseQueryString(uri.Query);
-            var tValue = queryString.Get("t");
-            if (tValue is null || !int.TryParse(tValue, out var seconds))
+            var value = queryString.Get("t");
+            if (string.IsNullOrEmpty(value))
+            {
                 return TimeSpan.Zero;
+            }
 
-            return TimeSpan.FromSeconds(seconds);
+            return ParseYouTubeTime(value);
+        }
+
+        /// <summary>
+        /// Parses a YouTube "t" parameter: plain seconds ("90") or the unit form
+        /// ("90s", "1m30s", "1h2m3s"). Returns <see cref="TimeSpan.Zero"/> for anything
+        /// it does not recognise.
+        /// </summary>
+        private static TimeSpan ParseYouTubeTime(string value)
+        {
+            const long maxSeconds = 24 * 60 * 60;
+
+            long totalSeconds = 0;
+            long current = 0;
+            var sawUnit = false;
+
+            foreach (var character in value)
+            {
+                if (char.IsAsciiDigit(character))
+                {
+                    current = (current * 10) + (character - '0');
+                    if (current > maxSeconds)
+                    {
+                        return TimeSpan.Zero;
+                    }
+
+                    continue;
+                }
+
+                var multiplier = char.ToLowerInvariant(character) switch
+                {
+                    'h' => 3600,
+                    'm' => 60,
+                    's' => 1,
+                    _ => 0
+                };
+
+                if (multiplier == 0)
+                {
+                    return TimeSpan.Zero;
+                }
+
+                totalSeconds += current * multiplier;
+                current = 0;
+                sawUnit = true;
+            }
+
+            // A trailing number with no unit is only valid when there were no units at
+            // all ("90"). Mixed forms like "1m30" are not YouTube syntax.
+            if (sawUnit && current != 0)
+            {
+                return TimeSpan.Zero;
+            }
+
+            totalSeconds += sawUnit ? 0 : current;
+
+            return totalSeconds is > 0 and <= maxSeconds
+                ? TimeSpan.FromSeconds(totalSeconds)
+                : TimeSpan.Zero;
         }
 
         private async Task HandleNextTrackComment(LavalinkTrack track)
