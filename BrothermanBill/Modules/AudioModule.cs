@@ -142,6 +142,10 @@ namespace BrothermanBill.Modules
             {
                 await HandleNextTrackComment(player.CurrentTrack);
             }
+            else
+            {
+                await FollowupAsync($"Moved `{currentTrack.Title}` to the back of the queue.");
+            }
         }
 
         [SlashCommand("pause", "Pauses the current track.")]
@@ -321,6 +325,10 @@ namespace BrothermanBill.Modules
             if (player.CurrentTrack is not null)
             {
                 await HandleNextTrackComment(player.CurrentTrack);
+            }
+            else
+            {
+                await FollowupAsync($"Skipped `{oldTitle}`.");
             }
         }
 
