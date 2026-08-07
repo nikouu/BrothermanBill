@@ -46,6 +46,12 @@ Requires [.NET 10 or higher](https://dotnet.microsoft.com/en-us/download).
 dotnet build
 ```
 
+### Test
+```
+dotnet test BrothermanBill.Tests/BrothermanBill.Tests.csproj
+```
+The tests cover the pure logic: seek and YouTube time parsing, the queue embed size limit, and the MyInstants client. They need no Discord token and no Lavalink node.
+
 ### Deploying to a Raspberry Pi 4
 
 1. **Install Java on the Pi:**
