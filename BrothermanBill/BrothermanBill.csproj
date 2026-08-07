@@ -26,9 +26,6 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="Brothermanbill.mp3">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="brothermanbill.service">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -66,7 +63,6 @@
 
   <ItemGroup>
     <Folder Include="Lavalink\logs\" />
-    <Folder Include="Properties\PublishProfiles\" />
   </ItemGroup>
 
 </Project>

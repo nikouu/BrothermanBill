@@ -7,16 +7,6 @@ namespace BrothermanBill
     {
         private Color MusicColour => Color.DarkPurple;
 
-        public async Task<Embed> CreateBasicEmbed(string title, string description, Color color)
-        {
-            var embed = await Task.Run(() => (new EmbedBuilder()
-                .WithTitle(title)
-                .WithDescription(description)
-                .WithColor(color)
-                .Build()));
-            return embed;
-        }
-
         public async Task<Embed> CreatePlayEmbed(string title, string artist, string url, string art)
         {
             var embed = await Task.Run(() => new EmbedBuilder()
